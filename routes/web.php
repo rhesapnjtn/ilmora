@@ -3,7 +3,12 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome', [
+        'page' => [
+            'title' => 'Ilmora - Aprende Digital',
+            'description' => 'Plataforma de aprendizaje digital para cursos en línea',
+        ],
+    ]);
 });
 
 Route::get('/dashboard', function () {

@@ -87,7 +87,7 @@ jobs:
         run: ./vendor/bin/pint --test
 
       - name: Run Laravel tests
-        run: php artisan test --stop-on-failure -vvv
+        run: php artisan test --stop-on-failure
 
       - name: Dump Laravel logs on failure
         if: failure()

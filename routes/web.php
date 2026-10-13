@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Inertia\Laravel\Inertia;
 
 Route::get('/', function () {
     return view('welcome');

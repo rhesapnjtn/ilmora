@@ -1,4 +1,5 @@
-name: CI
+
+name: Laravel CI
 
 on:
   push:
@@ -6,51 +7,61 @@ on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+
 jobs:
   laravel-tests:
     name: Laravel Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo, sqlite3, tokenizer, xml, xmlreader, xmlwriter, zip
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, gd, pdo, sqlite3, zip
           coverage: none
 
-      - name: Validate composer.json
+      - name: Validate Composer configuration
         run: composer validate
 
-      - name: Cache Composer packages
-        id: composer-cache
-        uses: actions/cache@v4
+      - name: Cache Composer dependencies
+        uses: actions/cache@v6
         with:
           path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php-8.2-${{ hashFiles('composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php-
+            ${{ runner.os }}-php-8.2-
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Create .env file
+      - name: Prepare Laravel environment
         run: |
           cp .env.example .env
-          php artisan key:generate
-
-      - name: Create database
-        run: |
+          mkdir -p database
           touch database/database.sqlite
-          php artisan migrate --force
+          php artisan key:generate
+          php artisan config:clear
+
+      - name: Run database migrations
+        run: php artisan migrate --force
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22'
+          cache: npm
 
       - name: Install NPM dependencies
         run: npm ci
@@ -58,20 +69,8 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Run Laravel Pint (code style)
+      - name: Check code style with Laravel Pint
         run: ./vendor/bin/pint --test
 
-      - name: Run PHPUnit tests
-        run: php artisan test --parallel
-
-  deploy:
-    name: Deploy
-    needs: laravel-tests
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to server
-        run: echo "Add your deployment steps here (e.g., SSH, Docker, Laravel Forge, etc.)"
+      - name: Run Laravel tests
+        run: php artisan test

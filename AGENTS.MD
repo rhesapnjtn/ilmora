@@ -206,7 +206,7 @@ Setiap Pull Request (PR) harus:
 
 ## 3.1 Persiapan Lingkungan Lokal
 
-Ilmora dikembangkan menggunakan Laragon pada Windows dengan Laravel, Vue 3, Inertia.js, Tailwind CSS, dan MySQL sesuai konfigurasi proyek.
+Ilmora dikembangkan menggunakan Laragon pada Windows dengan Laravel sebagai backend REST API, Vue 3 + Vue Router sebagai SPA, Tailwind CSS, dan MySQL sesuai konfigurasi proyek.
 
 Sebelum memulai:
 
@@ -476,6 +476,7 @@ Gunakan struktur proyek yang sudah ada. Contoh berikut merupakan referensi, buka
 app/
 ├── Http/
 │   ├── Controllers/
+│   │   └── Api/
 │   ├── Middleware/
 │   └── Requests/
 ├── Models/
@@ -487,7 +488,7 @@ app/
 
 Pedoman:
 
-* **Controllers:** menangani permintaan HTTP dan mengoordinasikan alur aplikasi.
+* **Controllers:** menangani permintaan HTTP dan mengoordinasikan alur aplikasi. Endpoint REST API ditempatkan pada `app/Http/Controllers/Api/`.
 * **Form Requests:** menangani validasi dan, jika sesuai, otorisasi permintaan.
 * **Models:** merepresentasikan entitas dan relasi database.
 * **Policies:** menentukan izin terhadap resource.
@@ -496,45 +497,66 @@ Pedoman:
 
 Jangan membuat Service, Repository, atau abstraksi tambahan hanya karena terlihat lebih canggih. Gunakan abstraksi jika memang memberikan manfaat yang jelas.
 
-## 6.2 Frontend Vue dan Inertia.js
+## 6.2 Frontend Vue (SPA) dan REST API
+
+Ilmora menggunakan Vue 3 sebagai Single Page Application (SPA) yang berkomunikasi dengan backend melalui REST API. Vue Router menangani navigasi di sisi klien dan seluruh data diperoleh melalui endpoint JSON di `/api`.
 
 Contoh struktur:
 
 ```text
 resources/js/
 ├── Components/
-├── Composables/
 ├── Layouts/
 ├── Pages/
-├── Types/
-└── app.ts
+├── lib/
+│   ├── api.ts
+│   └── errors.ts
+├── stores/
+│   └── auth.ts
+├── App.vue
+├── app.js
+└── router.ts
 ```
 
 Pedoman:
 
-* **Pages:** halaman yang dirender melalui Inertia.js.
+* **Pages:** komponen halaman yang dipetakan melalui Vue Router.
 * **Components:** komponen UI yang dapat digunakan kembali.
 * **Layouts:** kerangka tampilan yang konsisten.
-* **Composables:** logika Vue yang dapat digunakan kembali.
-* **Types:** tipe TypeScript bersama jika diperlukan.
+* **lib:** utilitas bersama, termasuk klien HTTP (`api.ts`) dan penanganan error API.
+* **stores:** state bersama di sisi klien (misalnya status autentikasi).
+* **router:** definisi route SPA, guard autentikasi, dan judul halaman.
 
-Gunakan penamaan file dan folder yang konsisten dengan konvensi proyek.
+Gunakan penamaan file dan folder yang konsisten dengan konvensi proyek. Komunikasi data ke backend dilakukan melalui klien HTTP terpusat, bukan fetch yang tersebar.
 
 ## 6.3 Routing dan Controller
 
 * Kelompokkan route berdasarkan tanggung jawab.
+* Tempatkan endpoint REST API pada `routes/api.php` dan halaman SPA dilayani melalui route catch-all di `routes/web.php`.
 * Gunakan middleware untuk autentikasi dan pembatasan akses.
 * Gunakan named routes jika sesuai dengan pola proyek.
 * Hindari menempatkan seluruh logika bisnis di file route.
 * Gunakan resource controller untuk CRUD jika sesuai.
 * Pastikan endpoint yang mengubah data menggunakan metode HTTP dan proteksi yang tepat.
+* Gunakan `auth:sanctum` untuk melindungi endpoint yang membutuhkan autentikasi.
 
-## 6.4 Prinsip Perubahan Kode
+## 6.4 Konvensi REST API
+
+* Kembalikan respons JSON yang konsisten, misalnya `{ "user": ... }`, `{ "courses": ... }`, atau `{ "message": ... }`.
+* Gunakan kode status HTTP yang sesuai: `200` sukses, `201` dibuat, `204` tanpa konten, `401` belum terautentikasi, `403` tidak diizinkan, `404` tidak ditemukan, `422` validasi gagal.
+* Gunakan Form Request untuk validasi dan biarkan Laravel mengembalikan `422` dengan struktur `errors`.
+* Jangan mengembalikan stack trace atau detail internal pada respons error.
+* Jangan mengekspos kolom sensitif (password, token pihak lain, atribut internal) pada respons.
+* Autentikasi menggunakan Laravel Sanctum dengan token akses (Bearer token).
+* Terapkan rate limiting pada endpoint sensitif seperti login dan registrasi.
+* Dokumentasikan endpoint baru (metode, path, payload, respons, status) saat menambahkannya.
+
+## 6.5 Prinsip Perubahan Kode
 
 Sebelum mengubah struktur atau menambahkan dependensi:
 
 1. Periksa implementasi yang sudah ada.
-2. Periksa versi Laravel, Vue, Inertia.js, dan paket terkait.
+2. Periksa versi Laravel, Vue, Vue Router, Sanctum, dan paket terkait.
 3. Ikuti pola yang sudah digunakan jika masih layak.
 4. Hindari refaktor besar di luar ruang lingkup tugas.
 5. Dokumentasikan perubahan arsitektur yang signifikan.
@@ -909,14 +931,16 @@ Jangan mengasumsikan semua langganan diperpanjang otomatis atau semua pembayaran
 
 Jika penyedia pembayaran belum dipilih, jangan mengarang endpoint, format webhook, atau mekanisme verifikasi.
 
-## 12.5 Inertia.js dan Navigasi
+## 12.5 REST API, Autentikasi Token, dan Navigasi SPA
 
-* Ikuti pola routing Laravel dan Inertia.js yang sudah digunakan.
-* Gunakan route server sebagai sumber kebenaran untuk halaman terlindungi.
-* Kirim hanya data yang diperlukan melalui props Inertia.
-* Jangan mengirim password, token privat, secret, atau atribut internal sensitif ke props Inertia.
-* Gunakan validasi dan penanganan error yang konsisten.
-* Pastikan navigasi, formulir, dan tindakan pengguna memberikan umpan balik yang jelas.
+* Ikuti pola routing Laravel dan Vue Router yang sudah digunakan.
+* Jadikan server sebagai sumber kebenaran: endpoint `auth:sanctum` hanya mengembalikan data milik pengguna yang terautentikasi.
+* Kirim hanya data yang diperlukan pada respons JSON.
+* Jangan mengirim password, token pengguna lain, secret, atau atribut internal sensitif pada respons API.
+* Guard otentikasi SPA di sisi klien bersifat untuk pengalaman pengguna saja, bukan pengganti pemeriksaan server.
+* Simpan token akses pada klien secara aman dan sertakan sebagai `Authorization: Bearer <token>`.
+* Gunakan validasi dan penanganan error yang konsisten (`422` untuk validasi, `401` untuk belum terautentikasi).
+* Pastikan navigasi, formulir, dan tindakan pengguna memberikan umpan balik yang jelas (loading, error, sukses).
 * Jangan menjadikan otorisasi frontend sebagai pengganti pemeriksaan server.
 
 ## 12.6 Queue dan Penjadwalan

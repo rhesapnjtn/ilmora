@@ -148,7 +148,7 @@ onMounted(() => loadCourses())
 
             <div class="mt-6 grid gap-8 lg:grid-cols-[16rem_1fr]">
                 <aside class="space-y-6">
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Tingkat Kesulitan</h2>
                         <div class="mt-3 space-y-2">
                             <label class="flex items-center gap-3 text-body-md text-on-surface-variant">
@@ -160,7 +160,7 @@ onMounted(() => loadCourses())
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Harga</h2>
                         <div class="mt-3 space-y-2">
                             <label class="flex items-center gap-3 text-body-md text-on-surface-variant">
@@ -175,7 +175,7 @@ onMounted(() => loadCourses())
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Rating</h2>
                         <div class="mt-3 space-y-2">
                             <label v-for="option in ratingOptions" :key="option.value" class="flex items-center gap-3 text-body-md text-on-surface-variant">
@@ -205,7 +205,7 @@ onMounted(() => loadCourses())
                     </p>
 
                     <div v-if="loading" class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <div v-for="n in 3" :key="n" class="card overflow-hidden" style="padding: 0">
+                        <div v-for="n in 3" :key="n" class="card-flush">
                             <div class="aspect-video w-full animate-pulse bg-surface-container-high" />
                             <div class="space-y-3 p-5">
                                 <div class="h-5 w-24 animate-pulse rounded bg-surface-container-high" />
@@ -225,9 +225,13 @@ onMounted(() => loadCourses())
                     </div>
 
                     <div v-else class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="course in courses" :key="course.slug" class="card-hover card flex flex-col overflow-hidden" style="padding: 0">
-                            <div class="flex aspect-video items-center justify-center bg-gradient-to-br" :class="accentClasses[course.accent] || accentClasses.primary">
-                                <span class="text-label-lg font-semibold uppercase tracking-widest text-white/90">{{ course.categoryName }}</span>
+                        <article v-for="course in courses" :key="course.slug" class="card-flush card-hover flex flex-col">
+                            <div class="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br" :class="accentClasses[course.accent] || accentClasses.primary">
+                                <svg class="absolute -bottom-6 -right-4 h-32 w-32 text-white/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                </svg>
+                                <span class="relative text-label-lg font-semibold uppercase tracking-widest text-white/90">{{ course.categoryName }}</span>
                             </div>
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="flex flex-wrap items-center gap-2">

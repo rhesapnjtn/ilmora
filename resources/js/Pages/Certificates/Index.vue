@@ -78,7 +78,7 @@ onMounted(load)
                 </div>
                 <h3 class="mt-4 line-clamp-2 text-title-md font-semibold">{{ certificate.courseTitle }}</h3>
                 <p class="mt-2 text-body-sm text-on-surface-variant">{{ formatDate(certificate.issuedAt) }}</p>
-                <span class="link mt-4 text-body-sm">Lihat sertifikat</span>
+                <span class="link mt-auto pt-4 text-body-sm">Lihat sertifikat</span>
             </RouterLink>
         </div>
     </AppLayout>

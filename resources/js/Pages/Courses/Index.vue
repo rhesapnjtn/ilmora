@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 import api from '@/lib/api'
 
@@ -24,6 +24,8 @@ interface Course {
 
 interface Category { slug: string; name: string }
 interface Meta { page: number; perPage: number; total: number; lastPage: number }
+
+const route = useRoute()
 
 const courses = ref<Course[]>([])
 const categories = ref<Category[]>([])
@@ -98,8 +100,15 @@ function resetFilters(): void {
     applyFilters()
 }
 
+function syncFromQuery(): void {
+    filters.search = typeof route.query.search === 'string' ? route.query.search : ''
+    filters.category = typeof route.query.category === 'string' ? route.query.category : ''
+    loadCourses(1)
+}
+
 watch(() => [filters.level, filters.price, filters.rating], applyFilters)
-onMounted(() => loadCourses())
+watch(() => route.query, syncFromQuery, { deep: true })
+onMounted(syncFromQuery)
 </script>
 
 <template>

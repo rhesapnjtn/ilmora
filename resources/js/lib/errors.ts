@@ -8,10 +8,12 @@ export interface ValidationErrorPayload {
 export interface NormalizedErrors {
     messages: Record<string, string>;
     message: string | null;
+    status: number | null;
 }
 
 export function normalizeApiError(error: unknown): NormalizedErrors {
     const response = (error as AxiosError<ValidationErrorPayload>)?.response;
+    const status = response?.status ?? null;
     const data = response?.data;
     const messages: Record<string, string> = {};
 
@@ -21,8 +23,19 @@ export function normalizeApiError(error: unknown): NormalizedErrors {
         }
     }
 
+    let message = data?.message ?? null;
+
+    if (status === 429) {
+        message = 'Terlalu banyak percobaan. Silakan tunggu beberapa saat sebelum mencoba lagi.';
+    } else if (status === 401 && !message) {
+        message = 'Sesi Anda telah berakhir. Silakan masuk kembali.';
+    } else if (status !== null && status >= 500) {
+        message = 'Terjadi gangguan pada server. Silakan coba lagi nanti.';
+    }
+
     return {
         messages,
-        message: data?.message ?? null,
+        message,
+        status,
     };
 }

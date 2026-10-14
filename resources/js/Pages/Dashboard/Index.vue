@@ -68,7 +68,7 @@ onMounted(loadDashboard)
     <AppLayout>
         <div class="grid gap-8 lg:grid-cols-[16rem_1fr]">
             <aside class="hidden lg:block">
-                <div class="sticky top-24 rounded-3xl border border-outline-variant bg-surface-container-lowest p-4 shadow-card">
+                <div class="card sticky top-24 p-4">
                     <RouterLink
                         v-for="item in sidebarNav"
                         :key="item.to"
@@ -101,8 +101,8 @@ onMounted(loadDashboard)
                 <p v-if="error" class="mt-6 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ error }}</p>
 
                 <div v-if="loading" class="mt-8 grid gap-6 lg:grid-cols-3">
-                    <div class="h-56 animate-pulse rounded-3xl bg-surface-container-high lg:col-span-2" />
-                    <div class="h-56 animate-pulse rounded-3xl bg-surface-container-high" />
+                    <div class="h-56 animate-pulse rounded-2xl bg-surface-container-high lg:col-span-2" />
+                    <div class="h-56 animate-pulse rounded-2xl bg-surface-container-high" />
                 </div>
 
                 <template v-else-if="data">
@@ -169,7 +169,7 @@ onMounted(loadDashboard)
                         </div>
                     </section>
 
-                    <section class="mt-6 rounded-3xl border border-outline-variant bg-surface-container-low p-6">
+                    <section class="card mt-6">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-title-lg font-semibold">Paket {{ data.subscription.plan }} Aktif</h2>

@@ -161,7 +161,7 @@ onMounted(syncFromQuery)
 
             <div class="mt-6 grid gap-8 lg:grid-cols-[16rem_1fr]">
                 <aside class="space-y-6">
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Tingkat Kesulitan</h2>
                         <div class="mt-3 space-y-2">
                             <label class="flex items-center gap-3 text-body-md text-on-surface-variant">
@@ -173,7 +173,7 @@ onMounted(syncFromQuery)
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Harga</h2>
                         <div class="mt-3 space-y-2">
                             <label class="flex items-center gap-3 text-body-md text-on-surface-variant">
@@ -188,7 +188,7 @@ onMounted(syncFromQuery)
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+                    <div class="card">
                         <h2 class="text-title-md font-semibold">Rating</h2>
                         <div class="mt-3 space-y-2">
                             <label v-for="option in ratingOptions" :key="option.value" class="flex items-center gap-3 text-body-md text-on-surface-variant">

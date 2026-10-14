@@ -53,4 +53,13 @@ class AuthController extends Controller
             'message' => 'Berhasil keluar.',
         ]);
     }
+
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Berhasil keluar dari semua perangkat.',
+        ]);
+    }
 }

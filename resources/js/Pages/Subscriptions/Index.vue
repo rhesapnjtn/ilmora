@@ -23,7 +23,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const ctaHref = computed(() => (isAuthenticated.value ? '/dashboard' : '/daftar'))
-const memberLabel = computed(() => (user.value ? `Andi ${user.value.name.split(' ')[0]}` : 'Siswa Ilmora'))
+const memberLabel = computed(() => (user.value ? user.value.name.split(' ')[0] : 'Siswa Ilmora'))
 
 const benefits = [
     { title: 'Katalog materi lengkap', description: 'Akses seluruh kursus premium Ilmora.', icon: 'grid' },
@@ -92,7 +92,7 @@ onMounted(loadPlans)
             <p v-if="error" class="mb-6 rounded-2xl bg-error/10 px-4 py-3 text-center text-body-sm text-error" role="alert">{{ error }}</p>
 
             <div v-if="loading" class="grid gap-6 md:grid-cols-3">
-                <div v-for="n in 3" :key="n" class="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-card">
+                <div v-for="n in 3" :key="n" class="card">
                     <div class="h-6 w-1/2 animate-pulse rounded bg-surface-container-high" />
                     <div class="mt-4 h-9 w-2/3 animate-pulse rounded bg-surface-container-high" />
                 </div>
@@ -102,8 +102,8 @@ onMounted(loadPlans)
                 <div
                     v-for="plan in plans"
                     :key="plan.id"
-                    class="relative flex flex-col rounded-3xl border bg-surface-container-lowest p-6 shadow-card"
-                    :class="plan.highlighted ? 'border-primary shadow-[0_12px_40px_-12px_rgba(53,37,205,0.35)] md:-translate-y-2' : 'border-outline-variant'"
+                    class="card relative flex flex-col"
+                    :class="plan.highlighted ? 'border-primary shadow-[0_12px_40px_-12px_rgba(53,37,205,0.35)] md:-translate-y-2' : ''"
                 >
                     <span v-if="plan.highlighted" class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-label-sm font-semibold text-white">Paling Populer</span>
 

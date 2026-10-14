@@ -36,7 +36,7 @@ function submitSearch(): void {
 </script>
 
 <template>
-    <div class="flex min-h-screen flex-col bg-surface text-on-surface font-sans">
+    <div class="flex min-h-screen flex-col bg-surface font-sans text-on-surface">
         <header class="surface-elevation-2 sticky top-0 z-40">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
                 <div class="flex items-center gap-6">

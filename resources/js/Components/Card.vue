@@ -14,19 +14,16 @@ const props = withDefaults(defineProps<CardProps>(), {
 const paddingClasses: Record<NonNullable<CardProps['padding']>, string> = {
     none: '',
     sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
+    md: 'p-5 md:p-6',
+    lg: 'p-6 md:p-8',
 }
 
 const classes = computed(() => {
-    const base =
-        'bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-card transition-shadow duration-normal'
-    const hover =
-        props.variant === 'hover'
-            ? ' hover:shadow-[0_8px_30px_-4px_rgba(15,23,42,0.08)] hover:-translate-y-1 transition-transform duration-fast'
-            : ''
+    const base = props.padding === 'none' ? 'card-flush' : 'card'
+    const hover = props.variant === 'hover' ? ' card-hover' : ''
+    const padding = paddingClasses[props.padding]
 
-    return `${base}${hover} ${paddingClasses[props.padding]}`
+    return `${base}${hover} ${padding}`.trim()
 })
 </script>
 

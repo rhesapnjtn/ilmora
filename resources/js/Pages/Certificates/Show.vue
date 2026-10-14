@@ -49,7 +49,7 @@ onMounted(load)
 <template>
     <AppLayout>
         <div v-if="loading" class="mx-auto max-w-4xl">
-            <div class="aspect-[1.4] w-full animate-pulse rounded-3xl bg-surface-container-high" />
+            <div class="aspect-[1.4] w-full animate-pulse rounded-2xl bg-surface-container-high" />
         </div>
 
         <div v-else-if="notFound" class="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center">
@@ -60,7 +60,7 @@ onMounted(load)
         <p v-else-if="error" class="rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ error }}</p>
 
         <div v-else-if="certificate" class="mx-auto max-w-4xl">
-            <div class="overflow-hidden rounded-3xl border-[3px] border-primary/20 bg-white p-6 shadow-modal md:p-10">
+            <div class="overflow-hidden rounded-2xl border-[3px] border-primary/20 bg-white p-6 shadow-modal md:p-10">
                 <div class="rounded-2xl border border-[#D97706]/40 p-6 text-center md:p-10">
                     <div class="flex items-center justify-center gap-2 text-primary">
                         <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none" aria-hidden="true">

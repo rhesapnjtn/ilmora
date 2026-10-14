@@ -34,10 +34,12 @@ async function submit(): Promise<void> {
         await login({ email: form.email, password: form.password })
         await router.push('/dashboard')
     } catch (error) {
-        const { messages, message } = normalizeApiError(error)
+        const { messages, message, status: errorStatus } = normalizeApiError(error)
         Object.assign(errors, messages)
 
-        if (!messages.email) {
+        if (errorStatus === 429) {
+            status.value = message
+        } else if (!messages.email) {
             errors.email = message ?? 'Gagal masuk. Silakan periksa kembali data Anda.'
         }
 
@@ -95,6 +97,21 @@ async function submit(): Promise<void> {
                     </p>
                 </div>
             </form>
+
+            <ul class="mt-6 space-y-2 text-body-sm text-on-surface-variant">
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0 text-tertiary">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 12.75v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                    </svg>
+                    Kata sandi dienkripsi dan tidak pernah disimpan dalam bentuk teks biasa.
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0 text-tertiary">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    Kami membatasi percobaan masuk untuk melindungi akun Anda.
+                </li>
+            </ul>
         </div>
     </GuestLayout>
 </template>

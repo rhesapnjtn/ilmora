@@ -66,6 +66,51 @@ function badgeLabel(course: PopularCourse, index: number): string {
     return index === 0 ? 'Terpopuler' : course.categoryName
 }
 
+const badgeClasses: Record<string, string> = {
+    primary: 'bg-secondary-50 text-secondary-700',
+    secondary: 'bg-primary-50 text-primary',
+    tertiary: 'bg-tertiary-50 text-tertiary-700',
+}
+
+const valueProps = [
+    {
+        title: 'Kursus Berkualitas',
+        description: 'Materi dikurasi ketat dan disusun langsung oleh praktisi senior di perusahaan teknologi skala global.',
+        icon: 'verified',
+        iconClass: 'bg-primary-50 text-primary',
+        linkClass: 'text-primary',
+        link: 'Studi Kasus Riil',
+    },
+    {
+        title: 'Akses Unlimited',
+        description: 'Belajar mandiri dengan ritme sendiri tanpa batas kedaluwarsa materi, video, serta aset latihan.',
+        icon: 'infinity',
+        iconClass: 'bg-surface-container-high text-primary-500',
+        linkClass: 'text-primary',
+        link: 'Lifetime Update',
+    },
+    {
+        title: 'Sertifikat Resmi',
+        description: 'Bukti kompetensi terverifikasi dengan kode unik yang siap diintegrasikan langsung ke LinkedIn.',
+        icon: 'award',
+        iconClass: 'bg-secondary-50 text-secondary',
+        linkClass: 'text-secondary',
+        link: 'Verifikasi Online',
+    },
+    {
+        title: 'Dukungan Mentor',
+        description: 'Ruang diskusi interaktif dan review proyek personal agar kendala kode atau portofolio terselesaikan.',
+        icon: 'mentor',
+        iconClass: 'bg-tertiary-50 text-tertiary',
+        linkClass: 'text-tertiary',
+        link: 'Sesi 1-on-1 Q&A',
+    },
+]
+
+function badgeLabel(course: PopularCourse, index: number): string {
+    return index === 0 ? 'Terpopuler' : course.categoryName
+}
+
 function formatPrice(course: PopularCourse): string {
     if (course.free || course.price <= 0) return 'Gratis'
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(course.price)
@@ -381,6 +426,53 @@ onMounted(loadPopular)
                                 </svg>
                             </RouterLink>
                         </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="mx-auto w-full max-w-7xl px-4 py-10 lg:px-8 lg:py-16">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-500 via-primary to-[#283044] p-8 text-white shadow-2xl sm:p-12 lg:p-16">
+                <div class="pointer-events-none absolute -bottom-20 -right-16 h-80 w-80 rounded-full bg-secondary-300/20 blur-2xl" />
+                <div class="pointer-events-none absolute right-1/4 top-0 h-60 w-60 rounded-full bg-white/10 blur-xl" />
+                <div class="relative z-10 flex flex-col items-center justify-between gap-8 lg:flex-row">
+                    <div class="max-w-2xl text-center lg:text-left">
+                        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-label-sm text-primary-50 backdrop-blur-sm">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M5 13c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14 4c3-2 6-2 6-2s0 3-2 6l-6 6-4-4z" />
+                                <circle cx="15" cy="9" r="1.5" />
+                            </svg>
+                            <span>Akses Gratis Modul Pengenalan</span>
+                        </div>
+                        <h2 class="text-[28px] font-extrabold leading-tight text-white sm:text-[34px] lg:text-[40px]">
+                            Mulai perjalanan belajar bersama Ilmora sekarang!
+                        </h2>
+                        <p class="mt-4 max-w-xl text-body-lg text-primary-50/90">
+                            Bergabunglah dengan ribuan talenta digital lainnya dan rasakan lompatan karier dengan kurikulum aplikatif langsung ke portofolio.
+                        </p>
+                    </div>
+                    <div class="flex w-full shrink-0 flex-col items-center gap-4 sm:w-auto sm:flex-row">
+                        <RouterLink
+                            to="/daftar"
+                            class="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-white px-8 text-label-lg font-bold text-primary shadow-lg transition-transform hover:scale-105 active:scale-95 sm:w-auto"
+                        >
+                            <span>Daftar Gratis</span>
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M2 21v-2a4 4 0 0 1 4-4h6" />
+                                <path d="M19 8v6M22 11h-6" />
+                            </svg>
+                        </RouterLink>
+                        <RouterLink
+                            to="/langganan"
+                            class="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-white/15 px-8 text-label-lg font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/25 sm:w-auto"
+                        >
+                            <span>Lihat Paket Pro</span>
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="12" cy="8" r="5" />
+                                <path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5" />
+                            </svg>
+                        </RouterLink>
                     </div>
                 </article>
             </div>

@@ -61,6 +61,48 @@ async function submit(): Promise<void> {
         processing.value = false
     }
 }
+
+const passwordForm = reactive({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+})
+
+const passwordErrors = reactive<Record<string, string>>({})
+const passwordProcessing = ref(false)
+const passwordSaved = ref(false)
+const passwordStatus = ref<string | null>(null)
+
+function clearPasswordErrors(): void {
+    for (const key of Object.keys(passwordErrors)) {
+        delete passwordErrors[key]
+    }
+}
+
+async function submitPassword(): Promise<void> {
+    clearPasswordErrors()
+    passwordProcessing.value = true
+    passwordSaved.value = false
+    passwordStatus.value = null
+
+    try {
+        await api.put('/password', { ...passwordForm })
+
+        passwordSaved.value = true
+        passwordForm.current_password = ''
+        passwordForm.password = ''
+        passwordForm.password_confirmation = ''
+    } catch (error) {
+        const { messages, message, status: errorStatus } = normalizeApiError(error)
+        Object.assign(passwordErrors, messages)
+
+        if (Object.keys(messages).length === 0 || errorStatus === 429) {
+            passwordStatus.value = message ?? 'Gagal memperbarui kata sandi.'
+        }
+    } finally {
+        passwordProcessing.value = false
+    }
+}
 </script>
 
 <template>
@@ -102,6 +144,62 @@ async function submit(): Promise<void> {
                     <span v-if="saved" class="text-body-sm text-tertiary">Tersimpan.</span>
                 </div>
             </form>
+
+            <div class="mt-10">
+                <h2 class="text-headline-sm font-semibold tracking-tight">Keamanan</h2>
+                <p class="mt-1 text-body-md text-on-surface-variant">
+                    Ganti kata sandi secara berkala. Semua perangkat lain akan otomatis dikeluarkan setelah penggantian.
+                </p>
+
+                <p
+                    v-if="passwordStatus"
+                    class="mt-6 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error"
+                    role="alert"
+                >
+                    {{ passwordStatus }}
+                </p>
+
+                <form class="card mt-6" @submit.prevent="submitPassword">
+                    <div class="space-y-5">
+                        <Input
+                            id="current_password"
+                            v-model="passwordForm.current_password"
+                            label="Kata Sandi Saat Ini"
+                            type="password"
+                            autocomplete="current-password"
+                            :error="passwordErrors.current_password"
+                            required
+                        />
+
+                        <Input
+                            id="new_password"
+                            v-model="passwordForm.password"
+                            label="Kata Sandi Baru"
+                            type="password"
+                            autocomplete="new-password"
+                            :error="passwordErrors.password"
+                            required
+                        />
+
+                        <Input
+                            id="new_password_confirmation"
+                            v-model="passwordForm.password_confirmation"
+                            label="Konfirmasi Kata Sandi Baru"
+                            type="password"
+                            autocomplete="new-password"
+                            :error="passwordErrors.password_confirmation"
+                            required
+                        />
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-3">
+                        <Button type="submit" :loading="passwordProcessing" :disabled="passwordProcessing">
+                            Perbarui Kata Sandi
+                        </Button>
+                        <span v-if="passwordSaved" class="text-body-sm text-tertiary">Kata sandi diperbarui.</span>
+                    </div>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>

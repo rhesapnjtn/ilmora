@@ -49,10 +49,10 @@ watch(() => route.params.lesson, load)
     <AppLayout>
         <div v-if="loading" class="grid gap-6 lg:grid-cols-3">
             <div class="space-y-4 lg:col-span-2">
-                <div class="aspect-video w-full animate-pulse rounded-3xl bg-surface-container-high" />
+                <div class="aspect-video w-full animate-pulse rounded-2xl bg-surface-container-high" />
                 <div class="h-8 w-2/3 animate-pulse rounded bg-surface-container-high" />
             </div>
-            <div class="h-96 animate-pulse rounded-3xl bg-surface-container-high" />
+            <div class="h-96 animate-pulse rounded-2xl bg-surface-container-high" />
         </div>
 
         <div v-else-if="notFound" class="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center">
@@ -64,7 +64,7 @@ watch(() => route.params.lesson, load)
 
         <div v-else-if="data" class="grid gap-8 lg:grid-cols-3">
             <div class="lg:col-span-2">
-                <div class="relative overflow-hidden rounded-3xl bg-on-surface">
+                <div class="relative overflow-hidden rounded-2xl bg-on-surface">
                     <div class="flex aspect-video items-center justify-center bg-gradient-to-br from-[#1E1B4B] to-[#4C1D95]">
                         <button type="button" class="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg transition-transform hover:scale-105" aria-label="Putar video pelajaran">
                             <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
@@ -167,7 +167,7 @@ watch(() => route.params.lesson, load)
             </div>
 
             <aside>
-                <div class="sticky top-24 rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-card">
+                <div class="card sticky top-24">
                     <div class="flex items-center justify-between">
                         <h2 class="text-title-lg font-semibold">Daftar Materi</h2>
                         <span class="text-body-sm text-on-surface-variant">{{ completedCount }}/{{ data.lesson.total }}</span>

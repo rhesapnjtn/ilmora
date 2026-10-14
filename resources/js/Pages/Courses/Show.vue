@@ -81,10 +81,10 @@ watch(() => route.params.slug, loadCourse)
         <div v-if="loading" class="mx-auto max-w-7xl px-4 py-12">
             <div class="grid gap-8 lg:grid-cols-3">
                 <div class="space-y-4 lg:col-span-2">
-                    <div class="aspect-video w-full animate-pulse rounded-3xl bg-surface-container-high" />
+                    <div class="aspect-video w-full animate-pulse rounded-2xl bg-surface-container-high" />
                     <div class="h-9 w-3/4 animate-pulse rounded bg-surface-container-high" />
                 </div>
-                <div class="h-80 animate-pulse rounded-3xl bg-surface-container-high" />
+                <div class="h-80 animate-pulse rounded-2xl bg-surface-container-high" />
             </div>
         </div>
 
@@ -141,7 +141,7 @@ watch(() => route.params.slug, loadCourse)
                             </div>
                         </div>
 
-                        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-container shadow-modal">
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-container shadow-modal">
                             <div class="flex aspect-video items-center justify-center">
                                 <button type="button" class="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg transition-transform hover:scale-105" aria-label="Putar video pengenalan">
                                     <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
@@ -156,7 +156,7 @@ watch(() => route.params.slug, loadCourse)
             <section class="mx-auto max-w-7xl px-4 py-10">
                 <div class="grid gap-10 lg:grid-cols-3">
                     <div class="lg:col-span-2">
-                        <div class="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-card md:p-8">
+                        <div class="card md:p-8">
                             <h2 class="text-title-lg font-semibold">Apa yang akan kamu pelajari?</h2>
                             <ul class="mt-5 grid gap-3 sm:grid-cols-2">
                                 <li v-for="item in course.learn" :key="item" class="flex items-start gap-3 text-body-md text-on-surface-variant">
@@ -187,7 +187,7 @@ watch(() => route.params.slug, loadCourse)
                             </div>
 
                             <div v-if="activeTab === 'curriculum'" class="mt-6 space-y-3">
-                                <div v-for="(module, index) in course.curriculum" :key="module.title" class="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest">
+                                <div v-for="(module, index) in course.curriculum" :key="module.title" class="card-flush">
                                     <button type="button" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left" :aria-expanded="isModuleOpen(index)" @click="toggleModule(index)">
                                         <span class="flex items-center gap-3">
                                             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-label-md font-bold text-primary">{{ index + 1 }}</span>
@@ -209,14 +209,14 @@ watch(() => route.params.slug, loadCourse)
                                 </div>
                             </div>
 
-                            <div v-else class="mt-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 text-body-md leading-relaxed text-on-surface-variant">
+                            <div v-else class="card mt-6 leading-relaxed text-on-surface-variant">
                                 {{ course.description }}
                             </div>
                         </div>
                     </div>
 
                     <aside class="lg:col-span-1">
-                        <div class="sticky top-24 rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-card">
+                        <div class="card sticky top-24">
                             <div class="flex items-end gap-2">
                                 <span class="text-display-sm font-bold tracking-tight">{{ formatPrice(course.price, course.free) }}</span>
                                 <span v-if="!course.free" class="pb-1 text-body-sm text-on-surface-variant">sekali bayar</span>

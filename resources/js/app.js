@@ -1,12 +1,14 @@
-import { createInertiaApp } from '@inertiajs/inertia-vue3'
+import '../css/app.css';
 
-import './bootstrap'
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import { useAuth } from './stores/auth';
 
-createInertiaApp({
-    resolve: (name) => import(`./pages/${name}.js`),
-    title: (title) => `${title} - Ilmora`,
-    progress: {
-        color: '#3F51B5',
-        showSpinner: false,
-    },
-})
+const { fetchUser } = useAuth();
+
+fetchUser().finally(() => {
+    const app = createApp(App);
+    app.use(router);
+    app.mount('#app');
+});

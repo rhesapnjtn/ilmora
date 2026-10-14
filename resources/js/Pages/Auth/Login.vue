@@ -60,7 +60,7 @@ async function submit(): Promise<void> {
                 {{ status }}
             </p>
 
-            <form class="card mt-6" @submit.prevent="submit">
+            <form class="card mx-auto my-8 max-w-md p-6" @submit.prevent="submit">
                 <div class="space-y-5">
                     <Input
                         id="email"

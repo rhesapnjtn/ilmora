@@ -59,11 +59,11 @@ async function submit(): Promise<void> {
                 <p class="mt-2 text-body-md text-on-surface-variant">Mulai perjalanan belajar Anda di Ilmora secara gratis.</p>
             </div>
 
-            <p v-if="status" class="mt-6 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">
+            <p v-if="status" class="mt-6 rounded-2xl bg-tertiary/10 px-4 py-3 text-body-sm text-tertiary" role="alert">
                 {{ status }}
             </p>
 
-            <form class="card mt-6" @submit.prevent="submit">
+            <form class="card mx-auto my-8 max-w-md p-6" @submit.prevent="submit">
                 <div class="space-y-5">
                     <Input
                         id="name"

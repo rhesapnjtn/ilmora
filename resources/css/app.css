@@ -144,6 +144,11 @@
         text-wrap: balance;
     }
 
+    .pattern-dots {
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 1.5px, transparent 1.5px);
+        background-size: 20px 20px;
+    }
+
     .fade-enter-active,
     .fade-leave-active {
         transition: opacity 200ms ease;

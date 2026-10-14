@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
+import CourseCover from '@/Components/CourseCover.vue'
 import api from '@/lib/api'
 
 interface Course {
@@ -25,6 +26,8 @@ interface Course {
 interface Category { slug: string; name: string }
 interface Meta { page: number; perPage: number; total: number; lastPage: number }
 
+const route = useRoute()
+
 const courses = ref<Course[]>([])
 const categories = ref<Category[]>([])
 const levels = ref<string[]>([])
@@ -38,10 +41,13 @@ const hasFilters = computed(() =>
     filters.search !== '' || filters.category !== '' || filters.level !== '' || filters.price !== '' || filters.rating > 0,
 )
 
-const accentClasses: Record<string, string> = {
-    primary: 'from-primary to-primary-container',
-    secondary: 'from-secondary to-[#A855F7]',
-    tertiary: 'from-tertiary to-[#059669]',
+function initials(name: string): string {
+    return name
+        .split(' ')
+        .slice(0, 2)
+        .map((part) => part.charAt(0))
+        .join('')
+        .toUpperCase()
 }
 
 const ratingOptions = [
@@ -98,8 +104,15 @@ function resetFilters(): void {
     applyFilters()
 }
 
+function syncFromQuery(): void {
+    filters.search = typeof route.query.search === 'string' ? route.query.search : ''
+    filters.category = typeof route.query.category === 'string' ? route.query.category : ''
+    loadCourses(1)
+}
+
 watch(() => [filters.level, filters.price, filters.rating], applyFilters)
-onMounted(() => loadCourses())
+watch(() => route.query, syncFromQuery, { deep: true })
+onMounted(syncFromQuery)
 </script>
 
 <template>
@@ -205,7 +218,7 @@ onMounted(() => loadCourses())
                     </p>
 
                     <div v-if="loading" class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <div v-for="n in 3" :key="n" class="card overflow-hidden" style="padding: 0">
+                        <div v-for="n in 3" :key="n" class="card-flush">
                             <div class="aspect-video w-full animate-pulse bg-surface-container-high" />
                             <div class="space-y-3 p-5">
                                 <div class="h-5 w-24 animate-pulse rounded bg-surface-container-high" />
@@ -225,27 +238,52 @@ onMounted(() => loadCourses())
                     </div>
 
                     <div v-else class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="course in courses" :key="course.slug" class="card-hover card flex flex-col overflow-hidden" style="padding: 0">
-                            <div class="flex aspect-video items-center justify-center bg-gradient-to-br" :class="accentClasses[course.accent] || accentClasses.primary">
-                                <span class="text-label-lg font-semibold uppercase tracking-widest text-white/90">{{ course.categoryName }}</span>
-                            </div>
-                            <div class="flex flex-1 flex-col p-5">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="badge-primary">{{ course.categoryName }}</span>
+                        <article v-for="course in courses" :key="course.slug" class="card-flush card-hover group flex flex-col">
+                            <CourseCover
+                                :category-name="course.categoryName"
+                                :accent="course.accent"
+                                :duration-hours="course.durationHours"
+                                :level="course.level"
+                            />
+
+                            <div class="flex flex-1 flex-col p-5 md:p-6">
+                                <div class="mb-3 flex items-center justify-between gap-2">
                                     <span class="badge-outline">{{ course.level }}</span>
+                                    <div class="flex items-center gap-1">
+                                        <svg class="h-4 w-4 text-secondary-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2l2.9 6.3 6.9.6-5.2 4.5 1.6 6.7L12 16.9 5.8 20.1l1.6-6.7L2.2 8.9l6.9-.6z" />
+                                        </svg>
+                                        <span class="text-label-lg font-bold text-on-surface">{{ course.rating }}</span>
+                                        <span class="text-body-sm text-on-surface-variant">({{ course.reviews }})</span>
+                                    </div>
                                 </div>
-                                <h3 class="mt-3 line-clamp-2 text-title-md font-semibold">{{ course.title }}</h3>
-                                <p class="mt-1 text-body-sm text-on-surface-variant">{{ course.instructor.name }}</p>
 
-                                <div class="mt-3 flex items-center gap-2 text-body-sm text-on-surface-variant">
-                                    <svg class="h-4 w-4 text-[#F59E0B]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z" /></svg>
-                                    <span class="font-semibold text-on-surface">{{ course.rating }}</span>
-                                    <span>({{ course.reviews }})</span>
+                                <h3 class="mb-2 line-clamp-2 text-title-md font-bold leading-snug text-on-surface transition-colors group-hover:text-primary">
+                                    {{ course.title }}
+                                </h3>
+                                <p class="mb-4 line-clamp-2 text-body-sm leading-relaxed text-on-surface-variant">{{ course.summary }}</p>
+
+                                <div class="mb-4 mt-auto flex items-center gap-3 border-t border-surface-container pt-3">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-high text-label-md font-bold text-primary">
+                                        {{ initials(course.instructor.name) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-label-md font-semibold text-on-surface">{{ course.instructor.name }}</p>
+                                        <p class="truncate text-body-sm text-on-surface-variant">{{ course.instructor.role }}</p>
+                                    </div>
                                 </div>
 
-                                <div class="mt-auto flex items-center justify-between pt-5">
-                                    <span class="text-title-lg font-bold">{{ formatPrice(course) }}</span>
-                                    <RouterLink :to="`/kursus/${course.slug}`" class="btn-primary h-10 px-4 text-label-md">Daftar Sekarang</RouterLink>
+                                <div class="flex items-center justify-between pt-2">
+                                    <span class="text-headline-md font-extrabold text-primary">{{ formatPrice(course) }}</span>
+                                    <RouterLink
+                                        :to="`/kursus/${course.slug}`"
+                                        class="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-label-md font-bold text-white shadow-sm transition-transform hover:bg-primary-500 active:scale-95"
+                                    >
+                                        <span>Detail</span>
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path d="M5 12h14M13 6l6 6-6 6" />
+                                        </svg>
+                                    </RouterLink>
                                 </div>
                             </div>
                         </article>

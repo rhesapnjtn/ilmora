@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
+import CourseCover from '@/Components/CourseCover.vue'
 import api from '@/lib/api'
 
 interface Course {
@@ -40,10 +41,13 @@ const hasFilters = computed(() =>
     filters.search !== '' || filters.category !== '' || filters.level !== '' || filters.price !== '' || filters.rating > 0,
 )
 
-const accentClasses: Record<string, string> = {
-    primary: 'from-primary to-primary-container',
-    secondary: 'from-secondary to-[#A855F7]',
-    tertiary: 'from-tertiary to-[#059669]',
+function initials(name: string): string {
+    return name
+        .split(' ')
+        .slice(0, 2)
+        .map((part) => part.charAt(0))
+        .join('')
+        .toUpperCase()
 }
 
 const ratingOptions = [
@@ -234,31 +238,52 @@ onMounted(syncFromQuery)
                     </div>
 
                     <div v-else class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="course in courses" :key="course.slug" class="card-flush card-hover flex flex-col">
-                            <div class="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br" :class="accentClasses[course.accent] || accentClasses.primary">
-                                <svg class="absolute -bottom-6 -right-4 h-32 w-32 text-white/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                                </svg>
-                                <span class="relative text-label-lg font-semibold uppercase tracking-widest text-white/90">{{ course.categoryName }}</span>
-                            </div>
-                            <div class="flex flex-1 flex-col p-5">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="badge-primary">{{ course.categoryName }}</span>
+                        <article v-for="course in courses" :key="course.slug" class="card-flush card-hover group flex flex-col">
+                            <CourseCover
+                                :category-name="course.categoryName"
+                                :accent="course.accent"
+                                :duration-hours="course.durationHours"
+                                :level="course.level"
+                            />
+
+                            <div class="flex flex-1 flex-col p-5 md:p-6">
+                                <div class="mb-3 flex items-center justify-between gap-2">
                                     <span class="badge-outline">{{ course.level }}</span>
+                                    <div class="flex items-center gap-1">
+                                        <svg class="h-4 w-4 text-secondary-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2l2.9 6.3 6.9.6-5.2 4.5 1.6 6.7L12 16.9 5.8 20.1l1.6-6.7L2.2 8.9l6.9-.6z" />
+                                        </svg>
+                                        <span class="text-label-lg font-bold text-on-surface">{{ course.rating }}</span>
+                                        <span class="text-body-sm text-on-surface-variant">({{ course.reviews }})</span>
+                                    </div>
                                 </div>
-                                <h3 class="mt-3 line-clamp-2 text-title-md font-semibold">{{ course.title }}</h3>
-                                <p class="mt-1 text-body-sm text-on-surface-variant">{{ course.instructor.name }}</p>
 
-                                <div class="mt-3 flex items-center gap-2 text-body-sm text-on-surface-variant">
-                                    <svg class="h-4 w-4 text-[#F59E0B]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z" /></svg>
-                                    <span class="font-semibold text-on-surface">{{ course.rating }}</span>
-                                    <span>({{ course.reviews }})</span>
+                                <h3 class="mb-2 line-clamp-2 text-title-md font-bold leading-snug text-on-surface transition-colors group-hover:text-primary">
+                                    {{ course.title }}
+                                </h3>
+                                <p class="mb-4 line-clamp-2 text-body-sm leading-relaxed text-on-surface-variant">{{ course.summary }}</p>
+
+                                <div class="mb-4 mt-auto flex items-center gap-3 border-t border-surface-container pt-3">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-high text-label-md font-bold text-primary">
+                                        {{ initials(course.instructor.name) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-label-md font-semibold text-on-surface">{{ course.instructor.name }}</p>
+                                        <p class="truncate text-body-sm text-on-surface-variant">{{ course.instructor.role }}</p>
+                                    </div>
                                 </div>
 
-                                <div class="mt-auto flex items-center justify-between pt-5">
-                                    <span class="text-title-lg font-bold">{{ formatPrice(course) }}</span>
-                                    <RouterLink :to="`/kursus/${course.slug}`" class="btn-primary h-10 px-4 text-label-md">Daftar Sekarang</RouterLink>
+                                <div class="flex items-center justify-between pt-2">
+                                    <span class="text-headline-md font-extrabold text-primary">{{ formatPrice(course) }}</span>
+                                    <RouterLink
+                                        :to="`/kursus/${course.slug}`"
+                                        class="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-label-md font-bold text-white shadow-sm transition-transform hover:bg-primary-500 active:scale-95"
+                                    >
+                                        <span>Detail</span>
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path d="M5 12h14M13 6l6 6-6 6" />
+                                        </svg>
+                                    </RouterLink>
                                 </div>
                             </div>
                         </article>

@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Badge from '@/Components/Badge.vue'
 import Button from '@/Components/Button.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Input from '@/Components/Input.vue'
 import Modal from '@/Components/Modal.vue'
 import api from '@/lib/api'
@@ -62,6 +63,10 @@ const lessonModalOpen = ref(false)
 const editingLesson = ref<Lesson | null>(null)
 const lessonSaving = ref(false)
 const lessonForm = reactive({ title: '', module: '', duration: '', order: 0, is_free: false })
+
+const lessonDeleteOpen = ref(false)
+const lessonDeleting = ref(false)
+const lessonDeleteTarget = ref<Lesson | null>(null)
 
 function firstError(key: string): string | undefined {
     return errors.value[key]
@@ -208,13 +213,23 @@ async function saveLesson(): Promise<void> {
     }
 }
 
-async function deleteLesson(lesson: Lesson): Promise<void> {
-    if (!courseId.value) return
+function askDeleteLesson(lesson: Lesson): void {
+    lessonDeleteTarget.value = lesson
+    lessonDeleteOpen.value = true
+}
+
+async function confirmDeleteLesson(): Promise<void> {
+    if (!courseId.value || !lessonDeleteTarget.value) return
+    lessonDeleting.value = true
     try {
-        await api.delete(`/admin/courses/${courseId.value}/lessons/${lesson.id}`)
-        lessons.value = lessons.value.filter((item) => item.id !== lesson.id)
+        await api.delete(`/admin/courses/${courseId.value}/lessons/${lessonDeleteTarget.value.id}`)
+        lessons.value = lessons.value.filter((item) => item.id !== lessonDeleteTarget.value?.id)
+        lessonDeleteOpen.value = false
     } catch {
         error.value = 'Gagal menghapus pelajaran.'
+        lessonDeleteOpen.value = false
+    } finally {
+        lessonDeleting.value = false
     }
 }
 
@@ -333,7 +348,7 @@ onMounted(() => {
                             <div class="flex items-center gap-2">
                                 <Badge v-if="lesson.isFree" variant="success" size="sm">Pratinjau</Badge>
                                 <button type="button" class="btn-secondary h-9 rounded-lg px-3 text-label-md" @click="openLessonModal(lesson)">Edit</button>
-                                <button type="button" class="h-9 rounded-lg px-3 text-label-md font-semibold text-error transition-colors hover:bg-error/10" @click="deleteLesson(lesson)">Hapus</button>
+                                <button type="button" class="h-9 rounded-lg px-3 text-label-md font-semibold text-error transition-colors hover:bg-error/10" @click="askDeleteLesson(lesson)">Hapus</button>
                             </div>
                         </li>
                     </ul>
@@ -390,5 +405,17 @@ onMounted(() => {
                 </div>
             </template>
         </Modal>
+
+        <ConfirmDialog
+            v-model="lessonDeleteOpen"
+            title="Hapus Pelajaran"
+            variant="danger"
+            icon="trash"
+            confirm-label="Hapus"
+            :loading="lessonDeleting"
+            @confirm="confirmDeleteLesson"
+        >
+            Yakin ingin menghapus pelajaran <strong class="text-on-surface">{{ lessonDeleteTarget?.title }}</strong>? Tindakan ini tidak dapat dibatalkan.
+        </ConfirmDialog>
     </AdminLayout>
 </template>

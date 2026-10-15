@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 interface ButtonProps {
-    variant?: 'primary' | 'secondary' | 'ghost'
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
     size?: 'sm' | 'md' | 'lg'
     disabled?: boolean
     loading?: boolean
@@ -26,6 +26,7 @@ const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
     primary: 'bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-sm',
     secondary: 'bg-transparent border-[1.5px] border-outline text-on-surface hover:bg-surface-container-low active:scale-[0.98]',
     ghost: 'bg-transparent text-on-surface hover:bg-surface-container-low',
+    danger: 'bg-error text-white hover:bg-error/90 active:scale-[0.98] shadow-sm',
 }
 
 const sizes: Record<NonNullable<ButtonProps['size']>, string> = {

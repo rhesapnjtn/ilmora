@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import { useAuth } from '@/stores/auth'
 import api from '@/lib/api'
 
@@ -27,6 +28,9 @@ const { user, logout } = useAuth()
 const data = ref<Dashboard | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+const confirmLogoutOpen = ref(false)
+const loggingOut = ref(false)
 
 const greeting = computed(() => data.value?.user.name ?? user.value?.name ?? 'Siswa')
 
@@ -57,8 +61,14 @@ async function loadDashboard(): Promise<void> {
 }
 
 async function handleLogout(): Promise<void> {
-    await logout()
-    router.push('/')
+    loggingOut.value = true
+    try {
+        await logout()
+        confirmLogoutOpen.value = false
+        router.push('/')
+    } finally {
+        loggingOut.value = false
+    }
 }
 
 onMounted(loadDashboard)
@@ -83,7 +93,7 @@ onMounted(loadDashboard)
                         </svg>
                         {{ item.label }}
                     </RouterLink>
-                    <button type="button" class="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-label-lg font-medium text-error transition-colors hover:bg-error/10" @click="handleLogout">
+                    <button type="button" class="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-label-lg font-medium text-error transition-colors hover:bg-error/10" @click="confirmLogoutOpen = true">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" />
                         </svg>
@@ -181,5 +191,17 @@ onMounted(loadDashboard)
                 </template>
             </div>
         </div>
+
+        <ConfirmDialog
+            v-model="confirmLogoutOpen"
+            title="Keluar dari Akun?"
+            message="Anda akan keluar dari akun Ilmora. Untuk mengakses materi dan sertifikat lagi, Anda perlu masuk kembali."
+            confirm-label="Keluar"
+            cancel-label="Tetap di Sini"
+            variant="danger"
+            icon="logout"
+            :loading="loggingOut"
+            @confirm="handleLogout"
+        />
     </AppLayout>
 </template>

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import BottomNav from '@/Components/BottomNav.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Logo from '@/Components/Logo.vue'
 
 const route = useRoute()
@@ -10,6 +11,8 @@ const router = useRouter()
 const { user, isAdmin, logout: performLogout } = useAuth()
 
 const mobileMenuOpen = ref(false)
+const confirmLogoutOpen = ref(false)
+const loggingOut = ref(false)
 
 const currentPath = computed(() => route.path)
 
@@ -23,10 +26,20 @@ function isActive(match: string): boolean {
     return match === '/' ? currentPath.value === '/' : currentPath.value.startsWith(match)
 }
 
-async function logout(): Promise<void> {
-    await performLogout()
+function requestLogout(): void {
     mobileMenuOpen.value = false
-    router.push('/')
+    confirmLogoutOpen.value = true
+}
+
+async function confirmLogout(): Promise<void> {
+    loggingOut.value = true
+    try {
+        await performLogout()
+        confirmLogoutOpen.value = false
+        router.push('/')
+    } finally {
+        loggingOut.value = false
+    }
 }
 </script>
 
@@ -101,7 +114,7 @@ async function logout(): Promise<void> {
                         v-if="user"
                         type="button"
                         class="btn-secondary h-10 px-4 text-label-md"
-                        @click="logout"
+                        @click="requestLogout"
                     >
                         Keluar
                     </button>
@@ -179,7 +192,7 @@ async function logout(): Promise<void> {
                             v-if="user"
                             type="button"
                             class="block w-full rounded-xl px-4 py-3 text-left text-label-lg font-medium text-error transition-colors hover:bg-error/10"
-                            @click="logout"
+                            @click="requestLogout"
                         >
                             Keluar
                         </button>
@@ -195,5 +208,17 @@ async function logout(): Promise<void> {
                 </aside>
             </div>
         </Transition>
+
+        <ConfirmDialog
+            v-model="confirmLogoutOpen"
+            title="Keluar dari Akun?"
+            message="Anda akan keluar dari akun Ilmora. Untuk mengakses materi dan sertifikat lagi, Anda perlu masuk kembali."
+            confirm-label="Keluar"
+            cancel-label="Tetap di Sini"
+            variant="danger"
+            icon="logout"
+            :loading="loggingOut"
+            @confirm="confirmLogout"
+        />
     </div>
 </template>

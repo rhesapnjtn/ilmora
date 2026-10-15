@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Logo from '@/Components/Logo.vue'
 
 const route = useRoute()
@@ -9,6 +10,8 @@ const router = useRouter()
 const { user, logout: performLogout } = useAuth()
 
 const sidebarOpen = ref(false)
+const confirmLogoutOpen = ref(false)
+const loggingOut = ref(false)
 
 const pageTitle = computed(() => (route.meta.title as string | undefined) ?? 'Dashboard Admin')
 
@@ -24,9 +27,20 @@ function isActive(match: string): boolean {
     return route.path === match || route.path.startsWith(`${match}/`)
 }
 
-async function handleLogout(): Promise<void> {
-    await performLogout()
-    router.push('/')
+function requestLogout(): void {
+    sidebarOpen.value = false
+    confirmLogoutOpen.value = true
+}
+
+async function confirmLogout(): Promise<void> {
+    loggingOut.value = true
+    try {
+        await performLogout()
+        confirmLogoutOpen.value = false
+        router.push('/')
+    } finally {
+        loggingOut.value = false
+    }
 }
 </script>
 
@@ -65,7 +79,7 @@ async function handleLogout(): Promise<void> {
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" /></svg>
                     Lihat Situs
                 </RouterLink>
-                <button type="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-label-lg font-medium text-error transition-colors hover:bg-error/10" @click="handleLogout">
+                <button type="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-label-lg font-medium text-error transition-colors hover:bg-error/10" @click="requestLogout">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" /></svg>
                     Keluar
                 </button>
@@ -132,10 +146,22 @@ async function handleLogout(): Promise<void> {
                     </nav>
                     <div class="space-y-1 border-t border-outline-variant/60 p-3">
                         <RouterLink to="/" class="block rounded-xl px-3 py-2.5 text-label-lg font-medium text-on-surface-variant" @click="sidebarOpen = false">Lihat Situs</RouterLink>
-                        <button type="button" class="block w-full rounded-xl px-3 py-2.5 text-left text-label-lg font-medium text-error" @click="handleLogout">Keluar</button>
+                        <button type="button" class="block w-full rounded-xl px-3 py-2.5 text-left text-label-lg font-medium text-error" @click="requestLogout">Keluar</button>
                     </div>
                 </aside>
             </div>
         </Transition>
+
+        <ConfirmDialog
+            v-model="confirmLogoutOpen"
+            title="Keluar dari Panel Admin?"
+            message="Anda akan keluar dari akun Ilmora. Untuk kembali mengelola konten, Anda perlu masuk kembali."
+            confirm-label="Keluar"
+            cancel-label="Tetap di Sini"
+            variant="danger"
+            icon="logout"
+            :loading="loggingOut"
+            @confirm="confirmLogout"
+        />
     </div>
 </template>

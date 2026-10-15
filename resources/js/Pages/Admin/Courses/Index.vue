@@ -3,8 +3,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Badge from '@/Components/Badge.vue'
-import Button from '@/Components/Button.vue'
-import Modal from '@/Components/Modal.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Pagination from '@/Components/Pagination.vue'
 import api from '@/lib/api'
 
@@ -162,16 +161,16 @@ onMounted(() => load(1))
 
         <Pagination :page="meta.page" :last-page="meta.lastPage" @change="load" />
 
-        <Modal v-model="deleteModalOpen" title="Hapus Kursus" size="sm">
-            <p class="text-body-md text-on-surface-variant">
-                Yakin ingin menghapus kursus <strong class="text-on-surface">{{ target?.title }}</strong>? Tindakan ini juga menghapus seluruh pelajarannya dan tidak dapat dibatalkan.
-            </p>
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button variant="secondary" size="sm" @click="deleteModalOpen = false">Batal</Button>
-                    <Button variant="primary" size="sm" :loading="deleting" @click="confirmDelete">Hapus</Button>
-                </div>
-            </template>
-        </Modal>
+        <ConfirmDialog
+            v-model="deleteModalOpen"
+            title="Hapus Kursus"
+            variant="danger"
+            icon="trash"
+            confirm-label="Hapus"
+            :loading="deleting"
+            @confirm="confirmDelete"
+        >
+            Yakin ingin menghapus kursus <strong class="text-on-surface">{{ target?.title }}</strong>? Tindakan ini juga menghapus seluruh pelajarannya dan tidak dapat dibatalkan.
+        </ConfirmDialog>
     </AdminLayout>
 </template>

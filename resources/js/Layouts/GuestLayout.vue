@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import BottomNav from '@/Components/BottomNav.vue'
+import Logo from '@/Components/Logo.vue'
 
 const { user } = useAuth()
 const route = useRoute()
@@ -45,10 +46,7 @@ function submitSearch(): void {
                         class="flex items-center gap-2 text-headline-md font-bold tracking-tight text-on-surface transition-colors hover:text-primary"
                         aria-label="Ilmora - Beranda"
                     >
-                        <svg class="h-8 w-8 text-primary" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                            <rect width="32" height="32" rx="8" fill="currentColor" />
-                            <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-                        </svg>
+                        <Logo size="md" alt="Ilmora - Beranda" />
                         <span>Ilmora</span>
                     </RouterLink>
 
@@ -124,7 +122,7 @@ function submitSearch(): void {
                 <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5">
                     <div class="flex flex-col gap-4 lg:col-span-2">
                         <RouterLink to="/" class="flex select-none items-center gap-3" aria-label="Ilmora">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-headline-sm font-bold text-on-primary">I</span>
+                            <Logo size="md" alt="Ilmora" />
                             <span class="text-headline-sm font-bold tracking-tight text-on-surface">Ilmora</span>
                         </RouterLink>
                         <p class="max-w-sm text-body-md text-on-surface-variant">

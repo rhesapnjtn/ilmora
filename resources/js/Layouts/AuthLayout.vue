@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import Logo from '@/Components/Logo.vue'
 
 const { user } = useAuth()
 </script>
@@ -16,9 +17,7 @@ const { user } = useAuth()
                     data-path="beranda"
                     aria-label="Ilmora - Beranda"
                 >
-                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-                        
-                    </div>
+                    <Logo size="md" alt="Ilmora - Beranda" />
                     <span class="font-title-md text-title-md tracking-tight text-on-surface">Ilmora</span>
                 </RouterLink>
 

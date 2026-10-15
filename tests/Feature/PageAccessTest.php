@@ -38,4 +38,11 @@ class PageAccessTest extends TestCase
     {
         $this->get('/up')->assertOk();
     }
+
+    public function test_missing_build_asset_returns_not_found_instead_of_spa_shell(): void
+    {
+        $this->get('/build/assets/does-not-exist.js')
+            ->assertNotFound()
+            ->assertDontSee('id="app"', false);
+    }
 }

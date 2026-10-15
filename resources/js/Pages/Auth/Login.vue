@@ -34,7 +34,6 @@ async function submit(): Promise<void> {
 
     try {
         await login({ email: form.email, password: form.password })
-        await router.push('/dashboard')
     } catch (error) {
         const { messages, message, status: errorStatus } = normalizeApiError(error)
         Object.assign(errors, messages)
@@ -46,8 +45,17 @@ async function submit(): Promise<void> {
         }
 
         form.password = ''
+
+        return
     } finally {
         processing.value = false
+    }
+
+    try {
+        await router.push('/dashboard')
+    } catch {
+        // Authentication succeeded; a navigation failure (e.g. a stale chunk)
+        // must not be reported as invalid credentials. router.onError reloads.
     }
 }
 

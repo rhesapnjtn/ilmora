@@ -3,6 +3,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Badge from '@/Components/Badge.vue'
 import Button from '@/Components/Button.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Input from '@/Components/Input.vue'
 import Modal from '@/Components/Modal.vue'
 import Pagination from '@/Components/Pagination.vue'
@@ -200,16 +201,16 @@ onMounted(() => load(1))
             </template>
         </Modal>
 
-        <Modal v-model="deleteOpen" title="Hapus Pengguna" size="sm">
-            <p class="text-body-md text-on-surface-variant">
-                Yakin ingin menghapus pengguna <strong class="text-on-surface">{{ deleteTarget?.name }}</strong>? Seluruh token aksesnya akan dicabut dan tindakan ini tidak dapat dibatalkan.
-            </p>
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button variant="secondary" size="sm" @click="deleteOpen = false">Batal</Button>
-                    <Button size="sm" :loading="deleting" @click="confirmDelete">Hapus</Button>
-                </div>
-            </template>
-        </Modal>
+        <ConfirmDialog
+            v-model="deleteOpen"
+            title="Hapus Pengguna"
+            variant="danger"
+            icon="trash"
+            confirm-label="Hapus"
+            :loading="deleting"
+            @confirm="confirmDelete"
+        >
+            Yakin ingin menghapus pengguna <strong class="text-on-surface">{{ deleteTarget?.name }}</strong>? Seluruh token aksesnya akan dicabut dan tindakan ini tidak dapat dibatalkan.
+        </ConfirmDialog>
     </AdminLayout>
 </template>

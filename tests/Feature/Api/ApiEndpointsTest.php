@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\User;
 use Database\Seeders\CourseSeeder;
+use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -91,9 +92,14 @@ class ApiEndpointsTest extends TestCase
 
     public function test_plans_endpoint_is_public(): void
     {
+        $this->seed(PlanSeeder::class);
+
         $this->getJson('/api/plans')
             ->assertOk()
-            ->assertJsonStructure(['plans']);
+            ->assertJsonStructure(['plans', 'discountPercent'])
+            ->assertJsonPath('plans.0.name', 'Basic')
+            ->assertJsonPath('plans.0.highlighted', false)
+            ->assertJsonPath('plans.1.highlighted', true);
     }
 
     public function test_unknown_api_route_returns_json_404(): void

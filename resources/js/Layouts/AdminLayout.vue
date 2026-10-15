@@ -18,6 +18,7 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) ?? 'Da
 const navItems = [
     { label: 'Dashboard', to: '/admin/dashboard', match: '/admin/dashboard', icon: 'grid' },
     { label: 'Kursus', to: '/admin/kursus', match: '/admin/kursus', icon: 'book' },
+    { label: 'Paket', to: '/admin/paket', match: '/admin/paket', icon: 'tag' },
     { label: 'Pengguna', to: '/admin/pengguna', match: '/admin/pengguna', icon: 'users' },
     { label: 'Langganan', to: '/admin/langganan', match: '/admin/langganan', icon: 'card' },
     { label: 'Pembayaran', to: '/admin/pembayaran', match: '/admin/pembayaran', icon: 'wallet' },
@@ -68,6 +69,7 @@ async function confirmLogout(): Promise<void> {
                         <template v-else-if="item.icon === 'book'"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></template>
                         <template v-else-if="item.icon === 'users'"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></template>
                         <template v-else-if="item.icon === 'card'"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></template>
+                        <template v-else-if="item.icon === 'tag'"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></template>
                         <template v-else><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4z" /></template>
                     </svg>
                     {{ item.label }}

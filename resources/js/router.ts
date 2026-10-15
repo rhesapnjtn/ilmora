@@ -99,6 +99,24 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Edit Kursus', requiresAuth: true, requiresAdmin: true },
     },
     {
+        path: '/admin/paket',
+        name: 'admin-plans',
+        component: () => import('@/Pages/Admin/Plans/Index.vue'),
+        meta: { title: 'Kelola Paket', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/paket/baru',
+        name: 'admin-plans-create',
+        component: () => import('@/Pages/Admin/Plans/Form.vue'),
+        meta: { title: 'Tambah Paket', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/paket/:id/edit',
+        name: 'admin-plans-edit',
+        component: () => import('@/Pages/Admin/Plans/Form.vue'),
+        meta: { title: 'Edit Paket', requiresAuth: true, requiresAdmin: true },
+    },
+    {
         path: '/admin/pengguna',
         name: 'admin-users',
         component: () => import('@/Pages/Admin/Users/Index.vue'),

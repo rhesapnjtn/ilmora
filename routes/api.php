@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
@@ -57,6 +58,12 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
     Route::put('/users/{user}', [AdminUserController::class, 'update']);
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+
+    Route::get('/plans', [AdminPlanController::class, 'index']);
+    Route::post('/plans', [AdminPlanController::class, 'store']);
+    Route::get('/plans/{plan}', [AdminPlanController::class, 'show']);
+    Route::put('/plans/{plan}', [AdminPlanController::class, 'update']);
+    Route::delete('/plans/{plan}', [AdminPlanController::class, 'destroy']);
 
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
     Route::get('/payments', [AdminPaymentController::class, 'index']);

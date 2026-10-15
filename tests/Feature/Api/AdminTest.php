@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Models\Course;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\CourseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +28,7 @@ class AdminTest extends TestCase
         $this->getJson('/api/admin/dashboard')->assertStatus(401);
         $this->getJson('/api/admin/courses')->assertStatus(401);
         $this->getJson('/api/admin/users')->assertStatus(401);
+        $this->getJson('/api/admin/plans')->assertStatus(401);
     }
 
     public function test_regular_users_are_forbidden_from_admin_endpoints(): void
@@ -167,6 +170,101 @@ class AdminTest extends TestCase
         $this->withToken($admin->createToken('test')->plainTextToken)
             ->deleteJson("/api/admin/users/{$admin->id}")
             ->assertStatus(422);
+    }
+
+    public function test_admin_can_list_plans(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Plan::factory()->count(2)->create();
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->getJson('/api/admin/plans')
+            ->assertOk()
+            ->assertJsonStructure([
+                'plans' => [['id', 'name', 'slug', 'monthly', 'annual', 'highlighted', 'features', 'isActive', 'sortOrder']],
+            ])
+            ->assertJsonCount(2, 'plans');
+    }
+
+    public function test_admin_can_create_a_plan(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $response = $this->withToken($admin->createToken('test')->plainTextToken)
+            ->postJson('/api/admin/plans', [
+                'name' => 'Paket Enterprise',
+                'monthly' => 399000,
+                'annual' => 3990000,
+                'highlighted' => true,
+                'is_active' => true,
+                'sort_order' => 1,
+                'features' => ['Semua akses', 'Support 24/7'],
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('plan.name', 'Paket Enterprise')
+            ->assertJsonPath('plan.slug', 'paket-enterprise');
+
+        $this->assertDatabaseHas('plans', [
+            'slug' => 'paket-enterprise',
+            'monthly' => 399000,
+        ]);
+    }
+
+    public function test_admin_can_update_a_plan(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $plan = Plan::factory()->create(['name' => 'Paket Lama', 'monthly' => 100000, 'annual' => 1000000]);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->putJson("/api/admin/plans/{$plan->id}", [
+                'name' => 'Paket Baru',
+                'monthly' => 150000,
+                'annual' => 1500000,
+            ])
+            ->assertOk()
+            ->assertJsonPath('plan.name', 'Paket Baru');
+
+        $this->assertDatabaseHas('plans', [
+            'id' => $plan->id,
+            'name' => 'Paket Baru',
+            'monthly' => 150000,
+        ]);
+    }
+
+    public function test_admin_can_delete_an_unused_plan(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $plan = Plan::factory()->create();
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->deleteJson("/api/admin/plans/{$plan->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('plans', ['id' => $plan->id]);
+    }
+
+    public function test_admin_cannot_delete_a_plan_in_use(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $owner = User::factory()->create();
+        $plan = Plan::factory()->create(['name' => 'Premium', 'slug' => 'premium']);
+
+        Subscription::create([
+            'user_id' => $owner->id,
+            'plan' => 'Premium',
+            'status' => 'active',
+            'starts_at' => now(),
+            'expires_at' => now()->addMonth(),
+            'amount' => 149000,
+            'currency' => 'IDR',
+        ]);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->deleteJson("/api/admin/plans/{$plan->id}")
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('plans', ['id' => $plan->id]);
     }
 
     public function test_admin_can_list_subscriptions_and_payments(): void

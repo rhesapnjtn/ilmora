@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import Logo from '@/Components/Logo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,10 +36,7 @@ async function handleLogout(): Promise<void> {
         <aside class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-outline-variant/60 bg-surface-container-lowest lg:flex">
             <div class="flex h-16 items-center gap-2 border-b border-outline-variant/60 px-5">
                 <RouterLink to="/admin/dashboard" class="flex items-center gap-2 text-headline-sm font-bold tracking-tight text-on-surface transition-colors hover:text-primary" aria-label="Ilmora Admin">
-                    <svg class="h-8 w-8 text-primary" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                        <rect width="32" height="32" rx="8" fill="currentColor" />
-                        <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-                    </svg>
+                    <Logo size="md" alt="Ilmora Admin" />
                     <span>Ilmora<span class="ml-1 text-label-sm font-bold uppercase text-primary">Admin</span></span>
                 </RouterLink>
             </div>

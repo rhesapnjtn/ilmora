@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import Logo from '@/Components/Logo.vue'
 import api from '@/lib/api'
 
 interface Certificate {
@@ -63,10 +64,7 @@ onMounted(load)
             <div class="overflow-hidden rounded-2xl border-[3px] border-primary/20 bg-white p-6 shadow-modal md:p-10">
                 <div class="rounded-2xl border border-[#D97706]/40 p-6 text-center md:p-10">
                     <div class="flex items-center justify-center gap-2 text-primary">
-                        <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                            <rect width="32" height="32" rx="8" fill="currentColor" />
-                            <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-                        </svg>
+                        <Logo size="md" alt="Ilmora" />
                         <span class="text-headline-md font-bold tracking-tight">Ilmora</span>
                     </div>
 

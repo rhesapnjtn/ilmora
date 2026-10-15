@@ -142,6 +142,18 @@ const router = createRouter({
     scrollBehavior: () => ({ top: 0 }),
 });
 
+router.onError((error, to) => {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (
+        /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(
+            message,
+        )
+    ) {
+        window.location.assign(to.fullPath || '/');
+    }
+});
+
 router.beforeEach((to) => {
     const { isAuthenticated, isAdmin } = useAuth();
 

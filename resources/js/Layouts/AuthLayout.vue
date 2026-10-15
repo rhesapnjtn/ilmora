@@ -17,7 +17,7 @@ const { user } = useAuth()
                     aria-label="Ilmora - Beranda"
                 >
                     <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-                        <span class="material-symbols-outlined text-on-primary text-[20px]">auto_stories</span>
+                        
                     </div>
                     <span class="font-title-md text-title-md tracking-tight text-on-surface">Ilmora</span>
                 </RouterLink>
@@ -27,7 +27,7 @@ const { user } = useAuth()
                     class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors"
                     data-path="beranda"
                 >
-                    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    
                     <span>Kembali ke Beranda</span>
                 </RouterLink>
             </div>

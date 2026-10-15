@@ -6,7 +6,7 @@ import BottomNav from '@/Components/BottomNav.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { user, logout: performLogout } = useAuth()
+const { user, isAdmin, logout: performLogout } = useAuth()
 
 const mobileMenuOpen = ref(false)
 
@@ -77,6 +77,16 @@ async function logout(): Promise<void> {
                 </nav>
 
                 <div class="flex items-center gap-2">
+                    <RouterLink
+                        v-if="isAdmin"
+                        to="/admin/dashboard"
+                        class="hidden items-center gap-2 rounded-xl px-4 py-2 text-label-lg font-semibold text-primary transition-colors hover:bg-primary/10 sm:inline-flex"
+                    >
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+                        </svg>
+                        Panel Admin
+                    </RouterLink>
                     <RouterLink
                         v-if="user"
                         to="/profile"
@@ -152,6 +162,14 @@ async function logout(): Promise<void> {
 
                         <hr class="my-4 border-outline-variant" />
 
+                        <RouterLink
+                            v-if="isAdmin"
+                            to="/admin/dashboard"
+                            class="block rounded-xl px-4 py-3 text-label-lg font-semibold text-primary transition-colors hover:bg-primary/10"
+                            @click="mobileMenuOpen = false"
+                        >
+                            Panel Admin
+                        </RouterLink>
                         <RouterLink
                             to="/profile"
                             class="block rounded-xl px-4 py-3 text-label-lg font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary"

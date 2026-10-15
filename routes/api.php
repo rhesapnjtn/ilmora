@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\CourseController;
@@ -31,4 +37,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/certificates', [CertificateController::class, 'index']);
     Route::get('/certificates/{id}', [CertificateController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', AdminDashboardController::class);
+
+    Route::get('/courses', [AdminCourseController::class, 'index']);
+    Route::post('/courses', [AdminCourseController::class, 'store']);
+    Route::get('/courses/{course}', [AdminCourseController::class, 'show']);
+    Route::put('/courses/{course}', [AdminCourseController::class, 'update']);
+    Route::delete('/courses/{course}', [AdminCourseController::class, 'destroy']);
+    Route::post('/courses/{course}/publish', [AdminCourseController::class, 'togglePublish']);
+
+    Route::post('/courses/{course}/lessons', [AdminLessonController::class, 'store']);
+    Route::put('/courses/{course}/lessons/{lesson}', [AdminLessonController::class, 'update']);
+    Route::delete('/courses/{course}/lessons/{lesson}', [AdminLessonController::class, 'destroy']);
+
+    Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/users/{user}', [AdminUserController::class, 'show']);
+    Route::put('/users/{user}', [AdminUserController::class, 'update']);
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+
+    Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
+    Route::get('/payments', [AdminPaymentController::class, 'index']);
 });

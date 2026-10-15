@@ -71,6 +71,52 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Profil', requiresAuth: true },
     },
     {
+        path: '/admin',
+        redirect: { name: 'admin-dashboard' },
+    },
+    {
+        path: '/admin/dashboard',
+        name: 'admin-dashboard',
+        component: () => import('@/Pages/Admin/Dashboard/Index.vue'),
+        meta: { title: 'Dashboard Admin', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/kursus',
+        name: 'admin-courses',
+        component: () => import('@/Pages/Admin/Courses/Index.vue'),
+        meta: { title: 'Kelola Kursus', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/kursus/baru',
+        name: 'admin-courses-create',
+        component: () => import('@/Pages/Admin/Courses/Form.vue'),
+        meta: { title: 'Tambah Kursus', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/kursus/:id/edit',
+        name: 'admin-courses-edit',
+        component: () => import('@/Pages/Admin/Courses/Form.vue'),
+        meta: { title: 'Edit Kursus', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/pengguna',
+        name: 'admin-users',
+        component: () => import('@/Pages/Admin/Users/Index.vue'),
+        meta: { title: 'Kelola Pengguna', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/langganan',
+        name: 'admin-subscriptions',
+        component: () => import('@/Pages/Admin/Subscriptions/Index.vue'),
+        meta: { title: 'Kelola Langganan', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/pembayaran',
+        name: 'admin-payments',
+        component: () => import('@/Pages/Admin/Payments/Index.vue'),
+        meta: { title: 'Kelola Pembayaran', requiresAuth: true, requiresAdmin: true },
+    },
+    {
         path: '/kebijakan-privasi',
         name: 'privacy',
         component: () => import('@/Pages/Privacy.vue'),
@@ -97,10 +143,14 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isAdmin } = useAuth();
 
     if (to.meta.requiresAuth && !isAuthenticated.value) {
         return { name: 'login' };
+    }
+
+    if (to.meta.requiresAdmin && !isAdmin.value) {
+        return { name: 'dashboard' };
     }
 
     if (to.meta.guestOnly && isAuthenticated.value) {

@@ -1,10 +1,13 @@
 import { computed, reactive } from 'vue';
 import api from '@/lib/api';
 
+export type UserRole = 'user' | 'admin';
+
 export interface AuthUser {
     id: number;
     name: string;
     email: string;
+    role: UserRole;
 }
 
 interface AuthState {
@@ -27,6 +30,7 @@ if (state.token) {
 
 export function useAuth() {
     const isAuthenticated = computed(() => state.user !== null);
+    const isAdmin = computed(() => state.user?.role === 'admin');
 
     function applySession(user: AuthUser, token: string): void {
         state.user = user;
@@ -101,6 +105,7 @@ export function useAuth() {
         state,
         user: computed(() => state.user),
         isAuthenticated,
+        isAdmin,
         ready: computed(() => state.ready),
         fetchUser,
         login,

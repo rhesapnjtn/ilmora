@@ -30,7 +30,7 @@ scripts:
       pm.test('returns created lesson', () => {
         const json = pm.response.json();
         pm.expect(json).to.have.property('message');
-        pm.expect(json.lesson).to.include.keys('id', 'slug', 'title', 'order', 'isFree', 'materials');
+        pm.expect(json.lesson).to.include.keys('id', 'slug', 'title', 'order', 'isFree', 'videoUrl', 'materials');
       });
       const json = pm.response.json();
       if (json.lesson) {

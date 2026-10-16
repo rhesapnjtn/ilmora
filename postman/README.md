@@ -91,6 +91,24 @@ approval stays admin-only. The `Subscription Cancellation` folder runs **after**
 `Admin - Payments`, so `{{subscriptionId}}` is already active when it is
 cancelled and then resumed.
 
+## Lesson video
+
+Each lesson carries an optional `video_url` (DB column `course_lessons.video_url`):
+
+- Admin sets it through the lesson form (`Admin - Lessons` create/update) — accepted as
+  any `url` up to 2048 chars.
+- Admin can also **upload a video file**: `POST /api/admin/courses/{course}/lessons/{lesson}/video`
+  (multipart field `video`; MP4 / WebM / OGG / MOV, max 500 MB). The file is stored on the
+  `public` disk and its URL is saved into `video_url`. `DELETE .../video` removes the file
+  and clears `video_url`. Uploaded files are served from `/storage/videos/...`, so run
+  `php artisan storage:link` once. (File upload is not part of the automated collection
+  run — it needs a real binary — but is covered by feature tests.)
+- The public `GET /api/courses/{slug}/lessons/{lesson}` returns it as `lesson.videoUrl`
+  (`null` when the lesson has no video).
+- Supported players on the learning page: YouTube / Vimeo (rendered as an embed) and
+  direct `.mp4` / `.webm` / `.ogg` / `.mov` files (native `<video>`). Any other URL is
+  treated as "no video" and shows an empty state.
+
 ## Notes
 
 - Run order matters. Auth captures the tokens; Admin folders use

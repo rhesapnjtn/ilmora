@@ -66,6 +66,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/courses/{course}/lessons', [AdminLessonController::class, 'store']);
     Route::put('/courses/{course}/lessons/{lesson}', [AdminLessonController::class, 'update']);
     Route::delete('/courses/{course}/lessons/{lesson}', [AdminLessonController::class, 'destroy']);
+    Route::post('/courses/{course}/lessons/{lesson}/video', [AdminLessonController::class, 'uploadVideo']);
+    Route::delete('/courses/{course}/lessons/{lesson}/video', [AdminLessonController::class, 'destroyVideo']);
 
     Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/users/{user}', [AdminUserController::class, 'show']);

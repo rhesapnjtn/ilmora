@@ -10,6 +10,8 @@ use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\CourseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminTest extends TestCase
@@ -131,18 +133,92 @@ class AdminTest extends TestCase
                 'title' => 'Pelajaran Baru',
                 'module' => 'Modul Baru',
                 'duration' => '10:00',
+                'video_url' => 'https://www.youtube.com/watch?v=abc123xyz',
                 'is_free' => true,
             ]);
 
-        $response->assertCreated()->assertJsonPath('lesson.title', 'Pelajaran Baru');
+        $response->assertCreated()
+            ->assertJsonPath('lesson.title', 'Pelajaran Baru')
+            ->assertJsonPath('lesson.videoUrl', 'https://www.youtube.com/watch?v=abc123xyz');
 
         $lessonId = $response->json('lesson.id');
+
+        $this->assertDatabaseHas('course_lessons', [
+            'id' => $lessonId,
+            'video_url' => 'https://www.youtube.com/watch?v=abc123xyz',
+        ]);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->putJson("/api/admin/courses/{$course->id}/lessons/{$lessonId}", [
+                'title' => 'Pelajaran Baru',
+                'video_url' => 'https://example.com/intro.mp4',
+            ])
+            ->assertOk()
+            ->assertJsonPath('lesson.videoUrl', 'https://example.com/intro.mp4');
 
         $this->withToken($admin->createToken('test')->plainTextToken)
             ->deleteJson("/api/admin/courses/{$course->id}/lessons/{$lessonId}")
             ->assertOk();
 
         $this->assertDatabaseMissing('course_lessons', ['id' => $lessonId]);
+    }
+
+    public function test_admin_can_upload_and_delete_lesson_video(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $course = Course::query()->firstOrFail();
+
+        $lesson = $this->withToken($admin->createToken('test')->plainTextToken)
+            ->postJson("/api/admin/courses/{$course->id}/lessons", [
+                'title' => 'Pelajaran Video',
+            ])->assertCreated()->json('lesson');
+
+        $path = tempnam(sys_get_temp_dir(), 'vid');
+        file_put_contents($path, "\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isomiso2avc1mp41");
+        $video = new UploadedFile($path, 'video.mp4', 'video/mp4', null, true);
+
+        $response = $this->withToken($admin->createToken('test')->plainTextToken)
+            ->post("/api/admin/courses/{$course->id}/lessons/{$lesson['id']}/video", ['video' => $video])
+            ->assertOk();
+
+        $videoUrl = $response->json('lesson.videoUrl');
+
+        $this->assertIsString($videoUrl);
+        $this->assertStringContainsString('/storage/videos/', $videoUrl);
+
+        $this->assertDatabaseHas('course_lessons', [
+            'id' => $lesson['id'],
+            'video_url' => $videoUrl,
+        ]);
+
+        $pathOnDisk = str_replace(Storage::disk('public')->url(''), '', $videoUrl);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->delete("/api/admin/courses/{$course->id}/lessons/{$lesson['id']}/video")
+            ->assertOk()
+            ->assertJsonPath('lesson.videoUrl', null);
+
+        Storage::disk('public')->assertMissing($pathOnDisk);
+    }
+
+    public function test_admin_cannot_upload_non_video_file_as_lesson_video(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $course = Course::query()->firstOrFail();
+
+        $lesson = $this->withToken($admin->createToken('test')->plainTextToken)
+            ->postJson("/api/admin/courses/{$course->id}/lessons", [
+                'title' => 'Pelajaran Tanpa Video',
+            ])->assertCreated()->json('lesson');
+
+        $path = tempnam(sys_get_temp_dir(), 'doc');
+        file_put_contents($path, 'This is plain text, not a video.');
+        $file = new UploadedFile($path, 'notes.txt', 'text/plain', null, true);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->post("/api/admin/courses/{$course->id}/lessons/{$lesson['id']}/video", ['video' => $file])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('video');
     }
 
     public function test_admin_can_list_users_and_change_a_role(): void

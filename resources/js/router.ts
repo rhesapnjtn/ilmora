@@ -59,6 +59,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Daftar', guestOnly: true },
     },
     {
+        path: '/lupa-sandi',
+        name: 'forgot-password',
+        component: () => import('@/Pages/Auth/ForgotPassword.vue'),
+        meta: { title: 'Lupa Kata Sandi', guestOnly: true },
+    },
+    {
+        path: '/reset-sandi',
+        name: 'reset-password',
+        component: () => import('@/Pages/Auth/ResetPassword.vue'),
+        meta: { title: 'Atur Ulang Kata Sandi', guestOnly: true },
+    },
+    {
         path: '/dashboard',
         name: 'dashboard',
         component: () => import('@/Pages/Dashboard/Index.vue'),

@@ -98,6 +98,54 @@ class SubscriptionService
         });
     }
 
+    /**
+     * Cancel a subscription at the subscriber's request. A pending order is
+     * canceled immediately — its pending payment is marked failed so it leaves
+     * the admin verification queue — while an active subscription keeps its
+     * benefits until `expires_at` and is simply flagged as not renewing.
+     */
+    public function cancel(Subscription $subscription, ?string $reason = null): Subscription
+    {
+        return DB::transaction(function () use ($subscription, $reason): Subscription {
+            if ($subscription->status === 'pending') {
+                $subscription->payments()
+                    ->where('status', 'pending')
+                    ->update(['status' => 'failed']);
+
+                $subscription->update([
+                    'status' => 'canceled',
+                    'cancel_at_period_end' => false,
+                    'canceled_at' => now(),
+                    'cancellation_reason' => $reason,
+                ]);
+
+                return $subscription;
+            }
+
+            $subscription->update([
+                'cancel_at_period_end' => true,
+                'canceled_at' => now(),
+                'cancellation_reason' => $reason,
+            ]);
+
+            return $subscription;
+        });
+    }
+
+    /**
+     * Undo a scheduled cancellation so the subscription keeps renewing.
+     */
+    public function resume(Subscription $subscription): Subscription
+    {
+        $subscription->update([
+            'cancel_at_period_end' => false,
+            'canceled_at' => null,
+            'cancellation_reason' => null,
+        ]);
+
+        return $subscription;
+    }
+
     public function priceFor(Plan $plan, string $billingCycle): int
     {
         return $billingCycle === 'annual' ? (int) $plan->annual : (int) $plan->monthly;

@@ -1,0 +1,12 @@
+$kind: collection
+name: Subscription Cancellation
+description: >-
+  Subscriber self-service cancellation. Runs after Admin - Payments activates the
+  subscription: the active subscription is scheduled to end at its period end,
+  then the cancellation is resumed so it renews again. Uses {{token}}.
+order: 11250
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'

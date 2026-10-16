@@ -258,6 +258,147 @@ class SubscriptionTest extends TestCase
             ->assertJsonPath('subscription.hasActive', true);
     }
 
+    public function test_guests_cannot_cancel_a_subscription(): void
+    {
+        $user = User::factory()->create();
+        $subscription = $this->createActive($user);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/cancel")->assertStatus(401);
+    }
+
+    public function test_user_can_schedule_cancellation_of_an_active_subscription(): void
+    {
+        $user = User::factory()->create();
+        $subscription = $this->createActive($user);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/cancel", ['reason' => 'Terlalu mahal'])
+            ->assertOk()
+            ->assertJsonPath('subscription.status', 'active')
+            ->assertJsonPath('subscription.cancelAtPeriodEnd', true)
+            ->assertJsonPath('subscription.cancellationReason', 'Terlalu mahal');
+
+        $subscription->refresh();
+        $this->assertSame('active', $subscription->status);
+        $this->assertTrue($subscription->cancel_at_period_end);
+        $this->assertNotNull($subscription->canceled_at);
+    }
+
+    public function test_user_can_cancel_a_pending_order_immediately(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::factory()->create();
+
+        Sanctum::actingAs($user);
+        $order = $this->postJson('/api/subscriptions', ['plan' => $plan->slug, 'billing_cycle' => 'monthly'])
+            ->assertStatus(201);
+
+        $subscriptionId = $order->json('subscription.id');
+        $paymentId = $order->json('subscription.payment.id');
+
+        $this->postJson("/api/subscriptions/{$subscriptionId}/cancel")
+            ->assertOk()
+            ->assertJsonPath('subscription.status', 'canceled')
+            ->assertJsonPath('subscription.cancelAtPeriodEnd', false);
+
+        $this->assertDatabaseHas('subscriptions', ['id' => $subscriptionId, 'status' => 'canceled']);
+        $this->assertDatabaseHas('payments', ['id' => $paymentId, 'status' => 'failed']);
+    }
+
+    public function test_user_can_resume_a_scheduled_cancellation(): void
+    {
+        $user = User::factory()->create();
+        $subscription = $this->createActive($user, [
+            'cancel_at_period_end' => true,
+            'canceled_at' => now(),
+            'cancellation_reason' => 'Berhenti sementara',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/resume")
+            ->assertOk()
+            ->assertJsonPath('subscription.status', 'active')
+            ->assertJsonPath('subscription.cancelAtPeriodEnd', false)
+            ->assertJsonPath('subscription.cancellationReason', null);
+
+        $subscription->refresh();
+        $this->assertFalse($subscription->cancel_at_period_end);
+        $this->assertNull($subscription->canceled_at);
+    }
+
+    public function test_subscriptions_that_are_not_cancelable_are_rejected(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::factory()->create();
+
+        Sanctum::actingAs($user);
+        $order = $this->postJson('/api/subscriptions', ['plan' => $plan->slug, 'billing_cycle' => 'monthly'])
+            ->assertStatus(201);
+
+        $subscriptionId = $order->json('subscription.id');
+
+        $this->postJson("/api/subscriptions/{$subscriptionId}/cancel")->assertOk();
+        $this->postJson("/api/subscriptions/{$subscriptionId}/cancel")->assertStatus(422);
+    }
+
+    public function test_user_cannot_resume_a_subscription_that_is_not_scheduled_to_cancel(): void
+    {
+        $user = User::factory()->create();
+        $subscription = $this->createActive($user);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/resume")->assertStatus(422);
+    }
+
+    public function test_user_cannot_cancel_another_users_subscription(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $subscription = $this->createActive($owner);
+
+        Sanctum::actingAs($other);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/cancel")->assertStatus(404);
+        $this->postJson("/api/subscriptions/{$subscription->id}/resume")->assertStatus(404);
+
+        $this->assertFalse($subscription->refresh()->cancel_at_period_end);
+    }
+
+    public function test_cancellation_reason_is_validated(): void
+    {
+        $user = User::factory()->create();
+        $subscription = $this->createActive($user);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/subscriptions/{$subscription->id}/cancel", ['reason' => str_repeat('a', 501)])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('reason');
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function createActive(User $user, array $overrides = []): Subscription
+    {
+        $plan = Plan::factory()->create();
+
+        return Subscription::create(array_merge([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'plan' => $plan->name,
+            'billing_cycle' => 'monthly',
+            'status' => 'active',
+            'starts_at' => now()->subWeek()->toDateString(),
+            'expires_at' => now()->addWeeks(3)->toDateString(),
+            'amount' => $plan->monthly,
+            'currency' => 'IDR',
+        ], $overrides));
+    }
+
     /**
      * @return array{0: Subscription, 1: Payment}
      */

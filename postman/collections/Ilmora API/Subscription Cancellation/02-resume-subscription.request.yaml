@@ -1,0 +1,21 @@
+$kind: http-request
+name: Resume Subscription
+method: POST
+url: '{{apiUrl}}/subscriptions/{{subscriptionId}}/resume'
+order: 2000
+description: Undo the scheduled cancellation so the subscription renews again.
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('scheduled cancellation is cleared', () => {
+        const json = pm.response.json();
+        pm.expect(json.subscription.status).to.eql('active');
+        pm.expect(json.subscription.cancelAtPeriodEnd).to.eql(false);
+        pm.expect(json.subscription.cancellationReason).to.eql(null);
+        pm.expect(json.subscription.canResume).to.eql(false);
+      });

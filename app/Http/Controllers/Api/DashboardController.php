@@ -61,11 +61,13 @@ class DashboardController extends Controller
             ],
             'streakDays' => 5,
             'subscription' => [
+                'id' => $subscription?->id,
                 'plan' => $subscription?->plan,
                 'code' => $subscription?->status,
                 'status' => $this->statusLabel($subscription?->status),
                 'billingCycle' => $subscription?->billing_cycle,
                 'expiresAt' => $subscription?->expires_at?->translatedFormat('d F Y'),
+                'cancelAtPeriodEnd' => (bool) $subscription?->cancel_at_period_end,
                 'hasActive' => $activeSubscription !== null,
             ],
             'stats' => [

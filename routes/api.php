@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscriptions', [SubscriptionController::class, 'mine']);
     Route::post('/subscriptions', [SubscriptionController::class, 'store']);
     Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'order']);
+    Route::post('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
+    Route::post('/subscriptions/{subscription}/resume', [SubscriptionController::class, 'resume']);
 
     Route::get('/payments', [PaymentController::class, 'index']);
 });

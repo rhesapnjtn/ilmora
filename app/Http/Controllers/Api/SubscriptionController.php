@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CancelSubscriptionRequest;
 use App\Http\Requests\StoreSubscriptionRequest;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -102,6 +103,54 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    public function cancel(CancelSubscriptionRequest $request, Subscription $subscription): JsonResponse
+    {
+        if ((int) $subscription->user_id !== (int) $request->user()->id) {
+            return response()->json(['message' => 'Langganan tidak ditemukan.'], 404);
+        }
+
+        if (! $subscription->canBeCanceled()) {
+            return response()->json(['message' => 'Langganan ini tidak dapat dibatalkan.'], 422);
+        }
+
+        $reason = $request->filled('reason') ? $request->string('reason')->toString() : null;
+
+        $this->subscriptions->cancel($subscription, $reason);
+        $subscription->load(['payments', 'planRecord']);
+
+        return response()->json([
+            'message' => $subscription->status === 'pending'
+                ? 'Pesanan langganan berhasil dibatalkan.'
+                : 'Langganan akan berakhir pada akhir periode dan tidak diperpanjang otomatis.',
+            'subscription' => $this->presentSubscription(
+                $subscription,
+                $subscription->payments->sortByDesc('id')->first(),
+            ),
+        ]);
+    }
+
+    public function resume(Request $request, Subscription $subscription): JsonResponse
+    {
+        if ((int) $subscription->user_id !== (int) $request->user()->id) {
+            return response()->json(['message' => 'Langganan tidak ditemukan.'], 404);
+        }
+
+        if (! $subscription->canBeResumed()) {
+            return response()->json(['message' => 'Langganan ini tidak sedang dalam proses pembatalan.'], 422);
+        }
+
+        $this->subscriptions->resume($subscription);
+        $subscription->load(['payments', 'planRecord']);
+
+        return response()->json([
+            'message' => 'Pembatalan dibatalkan. Langganan akan diperpanjang otomatis.',
+            'subscription' => $this->presentSubscription(
+                $subscription,
+                $subscription->payments->sortByDesc('id')->first(),
+            ),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -132,6 +181,11 @@ class SubscriptionController extends Controller
             'currency' => $subscription->currency,
             'startsAt' => $subscription->starts_at?->toDateString(),
             'expiresAt' => $subscription->expires_at?->toDateString(),
+            'cancelAtPeriodEnd' => (bool) $subscription->cancel_at_period_end,
+            'canceledAt' => $subscription->canceled_at?->toIso8601String(),
+            'cancellationReason' => $subscription->cancellation_reason,
+            'canCancel' => $subscription->canBeCanceled(),
+            'canResume' => $subscription->canBeResumed(),
             'createdAt' => $subscription->created_at?->toIso8601String(),
             'payment' => $payment === null ? null : $this->presentPayment($payment),
         ];

@@ -53,6 +53,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Riwayat Transaksi', requiresAuth: true },
     },
     {
+        path: '/langganan/kelola',
+        name: 'subscription-manage',
+        component: () => import('@/Pages/Subscriptions/Manage.vue'),
+        meta: { title: 'Kelola Langganan', requiresAuth: true },
+    },
+    {
         path: '/sertifikat',
         name: 'certificates',
         component: () => import('@/Pages/Certificates/Index.vue'),

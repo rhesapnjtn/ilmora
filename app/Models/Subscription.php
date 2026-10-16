@@ -25,6 +25,9 @@ class Subscription extends Model
         'status',
         'starts_at',
         'expires_at',
+        'cancel_at_period_end',
+        'canceled_at',
+        'cancellation_reason',
         'amount',
         'currency',
     ];
@@ -37,6 +40,8 @@ class Subscription extends Model
         return [
             'starts_at' => 'date',
             'expires_at' => 'date',
+            'cancel_at_period_end' => 'boolean',
+            'canceled_at' => 'datetime',
             'amount' => 'decimal:2',
         ];
     }
@@ -75,5 +80,19 @@ class Subscription extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
+    }
+
+    /**
+     * A pending order can be canceled right away; an active subscription can be
+     * scheduled to end at its period end.
+     */
+    public function canBeCanceled(): bool
+    {
+        return in_array($this->status, ['pending', 'active'], true);
+    }
+
+    public function canBeResumed(): bool
+    {
+        return $this->status === 'active' && (bool) $this->cancel_at_period_end;
     }
 }

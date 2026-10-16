@@ -1,0 +1,31 @@
+$kind: http-request
+name: Cancel Active Subscription
+method: POST
+url: '{{apiUrl}}/subscriptions/{{subscriptionId}}/cancel'
+order: 1000
+description: >-
+  {{subscriptionId}} was approved by Admin - Payments, so it is active. Cancelling
+  keeps it active until the period ends and flags it as not renewing.
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Covered by the Postman collection run"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('subscription stays active but will not renew', () => {
+        const json = pm.response.json();
+        pm.expect(json.subscription.status).to.eql('active');
+        pm.expect(json.subscription.cancelAtPeriodEnd).to.eql(true);
+        pm.expect(json.subscription.cancellationReason).to.eql('Covered by the Postman collection run');
+        pm.expect(json.subscription.canResume).to.eql(true);
+      });

@@ -15,11 +15,13 @@ interface ActiveCourse {
 }
 
 interface Subscription {
+    id: number | null
     plan: string | null
     code: string | null
     status: string
     billingCycle: string | null
     expiresAt: string | null
+    cancelAtPeriodEnd: boolean
     hasActive: boolean
 }
 
@@ -198,7 +200,10 @@ onMounted(loadDashboard)
                             <div>
                                 <template v-if="data.subscription.hasActive">
                                     <h2 class="text-title-lg font-semibold">Paket {{ data.subscription.plan }} Aktif</h2>
-                                    <p class="mt-1 text-body-md text-on-surface-variant">Aktif hingga {{ data.subscription.expiresAt ?? '-' }}</p>
+                                    <p v-if="data.subscription.cancelAtPeriodEnd" class="mt-1 text-body-md text-on-surface-variant">
+                                        Dibatalkan &mdash; tetap aktif hingga {{ data.subscription.expiresAt ?? '-' }} dan tidak diperpanjang.
+                                    </p>
+                                    <p v-else class="mt-1 text-body-md text-on-surface-variant">Aktif hingga {{ data.subscription.expiresAt ?? '-' }}</p>
                                 </template>
                                 <template v-else-if="data.subscription.code === 'pending'">
                                     <h2 class="text-title-lg font-semibold">Pesanan Menunggu Verifikasi</h2>
@@ -211,7 +216,9 @@ onMounted(loadDashboard)
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <RouterLink v-if="data.subscription.plan" to="/langganan/riwayat" class="btn-secondary">Riwayat Transaksi</RouterLink>
-                                <RouterLink to="/langganan" class="btn-secondary">{{ data.subscription.hasActive ? 'Kelola Langganan' : 'Lihat Paket' }}</RouterLink>
+                                <RouterLink :to="data.subscription.plan ? '/langganan/kelola' : '/langganan'" class="btn-secondary">
+                                    {{ data.subscription.plan ? 'Kelola Langganan' : 'Lihat Paket' }}
+                                </RouterLink>
                             </div>
                         </div>
                     </section>

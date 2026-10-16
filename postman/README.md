@@ -1,7 +1,7 @@
 # Ilmora API — Postman Collection
 
 Git-native Postman v3 collection and environment for manually testing the
-Ilmora REST API, plus a runnable CLI suite (57 requests).
+Ilmora REST API, plus a runnable CLI suite (61 requests).
 
 ## Prerequisites
 
@@ -49,6 +49,7 @@ environment overrides them (e.g. to point at a different host).
 | `courseSlug`, `lessonSlug`, `certificateId`, `planSlug` | Sample record identifiers from the seeders |
 | `courseId`, `lessonId`, `planId`, `userId` | Filled in automatically during a run     |
 | `subscriptionId`, `paymentId` | Filled in automatically by the Subscriptions checkout flow |
+| `cancelSubscriptionId` | Filled in automatically by Create Order To Cancel |
 | `resetToken`      | Optional — set manually to test the reset-password happy path |
 
 `token`, `adminToken` and `testRunEmail` are collection variables set
@@ -74,6 +75,21 @@ The `Subscriptions` folder (runs after the admin CRUD folders) and the
 A subscription is only activated by the **admin** approval — never by the
 frontend. Each run registers a fresh test user, so its order and subscription
 are isolated from previous runs.
+
+## Subscription cancellation
+
+The subscriber can cancel on their own, in two situations (see the `Subscriptions`
+and `Subscription Cancellation` folders):
+
+| Method | Path | Auth | Purpose | Success |
+| ------ | ---- | ---- | ------- | ------- |
+| `POST` | `/api/subscriptions/{id}/cancel` | user | Cancel a **pending** order immediately (payment marked failed), or flag an **active** subscription as ending on `expires_at` (access is kept until then) | `200` |
+| `POST` | `/api/subscriptions/{id}/resume` | user | Undo a scheduled cancellation so the subscription renews again | `200` |
+
+Cancelling never downgrades access mid-period, and it never activates anything —
+approval stays admin-only. The `Subscription Cancellation` folder runs **after**
+`Admin - Payments`, so `{{subscriptionId}}` is already active when it is
+cancelled and then resumed.
 
 ## Notes
 

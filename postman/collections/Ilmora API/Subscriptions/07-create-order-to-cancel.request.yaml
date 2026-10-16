@@ -1,0 +1,33 @@
+$kind: http-request
+name: Create Order To Cancel
+method: POST
+url: '{{apiUrl}}/subscriptions'
+order: 7000
+description: Creates a throwaway pending order so the next request can cancel it.
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "plan": "{{planSlug}}",
+      "billing_cycle": "monthly",
+      "payment_method": "qris"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('creates a cancelable pending order', () => {
+        const json = pm.response.json();
+        pm.expect(json.subscription.status).to.eql('pending');
+        pm.expect(json.subscription.canCancel).to.eql(true);
+      });
+      const json = pm.response.json();
+      if (json.subscription) {
+        pm.environment.set('cancelSubscriptionId', String(json.subscription.id));
+      }

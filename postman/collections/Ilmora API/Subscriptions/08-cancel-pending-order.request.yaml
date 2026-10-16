@@ -1,0 +1,21 @@
+$kind: http-request
+name: Cancel Pending Order
+method: POST
+url: '{{apiUrl}}/subscriptions/{{cancelSubscriptionId}}/cancel'
+order: 8000
+description: A still-pending order is canceled immediately and its payment is marked failed.
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('pending order is canceled immediately', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.subscription.status).to.eql('canceled');
+        pm.expect(json.subscription.cancelAtPeriodEnd).to.eql(false);
+        pm.expect(json.subscription.canCancel).to.eql(false);
+      });

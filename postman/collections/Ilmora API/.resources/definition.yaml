@@ -17,6 +17,7 @@ variables:
   planId: ""
   subscriptionId: ""
   paymentId: ""
+  cancelSubscriptionId: ""
   userId: ""
   resetToken: ""
   token: ""

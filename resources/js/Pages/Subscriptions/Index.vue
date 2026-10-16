@@ -14,6 +14,15 @@ interface Plan {
     features: string[]
 }
 
+interface Membership {
+    id: number
+    plan: string | null
+    status: string
+    billingCycle: string | null
+    expiresAt: string | null
+    cancelAtPeriodEnd: boolean
+}
+
 const { isAuthenticated, user } = useAuth()
 
 const plans = ref<Plan[]>([])
@@ -22,7 +31,53 @@ const billing = ref<'monthly' | 'annual'>('monthly')
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+const subscriptions = ref<Membership[]>([])
+const membershipLoading = ref(false)
+
 const memberLabel = computed(() => user.value?.name ?? 'Siswa Ilmora')
+
+const membership = computed<Membership | null>(() => {
+    const active = subscriptions.value.find((item) => item.status === 'active')
+    const pending = subscriptions.value.find((item) => item.status === 'pending')
+
+    return active ?? pending ?? null
+})
+
+const membershipBadgeClass = computed(() => (membership.value?.status === 'active' ? 'badge-success' : 'badge-promo'))
+
+const membershipStatusLabel = computed(() => (membership.value?.status === 'active' ? 'Aktif' : 'Menunggu Pembayaran'))
+
+const membershipHeadline = computed(() => {
+    if (membershipLoading.value) {
+        return 'Memuat status langganan…'
+    }
+
+    if (!membership.value) {
+        return 'Kamu belum berlangganan'
+    }
+
+    return membership.value.status === 'active'
+        ? `Paket ${membership.value.plan ?? 'Langganan'} aktif`
+        : `Pesanan paket ${membership.value.plan ?? ''} menunggu verifikasi`
+})
+
+const membershipSubtitle = computed(() => {
+    const current = membership.value
+
+    if (!current) {
+        return 'Pilih paket di bawah untuk membuka seluruh materi dan sertifikat premium Ilmora.'
+    }
+
+    if (current.status === 'pending') {
+        return 'Selesaikan pembayaran agar admin dapat memverifikasi dan mengaktifkan langgananmu.'
+    }
+
+    if (current.cancelAtPeriodEnd) {
+        return `Dibatalkan — tetap aktif hingga ${formatDate(current.expiresAt)} dan tidak diperpanjang otomatis.`
+    }
+
+    return `Aktif hingga ${formatDate(current.expiresAt)}. Nikmati akses penuh ke seluruh katalog premium.`
+})
 
 const benefits = [
     { title: 'Katalog materi lengkap', description: 'Akses seluruh kursus premium Ilmora.', icon: 'grid' },
@@ -47,6 +102,14 @@ function formatPrice(price: number): string {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price)
 }
 
+function formatDate(value: string | null): string {
+    if (!value) {
+        return '-'
+    }
+
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value))
+}
+
 async function loadPlans(): Promise<void> {
     loading.value = true
     error.value = null
@@ -61,7 +124,27 @@ async function loadPlans(): Promise<void> {
     }
 }
 
-onMounted(loadPlans)
+async function loadMembership(): Promise<void> {
+    if (!isAuthenticated.value) {
+        return
+    }
+
+    membershipLoading.value = true
+
+    try {
+        const { data } = await api.get<{ subscriptions: Membership[] }>('/subscriptions')
+        subscriptions.value = data.subscriptions ?? []
+    } catch {
+        subscriptions.value = []
+    } finally {
+        membershipLoading.value = false
+    }
+}
+
+onMounted(() => {
+    loadPlans()
+    loadMembership()
+})
 </script>
 
 <template>
@@ -95,7 +178,46 @@ onMounted(loadPlans)
             </div>
         </section>
 
-        <section class="mx-auto max-w-7xl px-4 py-12">
+        <section v-if="isAuthenticated" class="border-b border-outline-variant/50 bg-gradient-to-r from-primary/5 via-surface to-tertiary/5">
+            <div class="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+                <div class="card flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-start gap-4">
+                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-tertiary/25 text-primary" aria-hidden="true">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.9 6.8 19.5l1-5.9-4.3-4.1 5.9-.9z" />
+                            </svg>
+                        </span>
+
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-title-md font-semibold">{{ membershipHeadline }}</h2>
+                                <span v-if="membership" :class="membershipBadgeClass">{{ membershipStatusLabel }}</span>
+                            </div>
+
+                            <p v-if="membershipLoading" class="mt-2 h-4 w-56 animate-pulse rounded bg-surface-container-high" aria-hidden="true" />
+                            <p v-else class="mt-1 max-w-xl text-body-sm text-on-surface-variant">{{ membershipSubtitle }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
+                        <template v-if="membership?.status === 'pending'">
+                            <RouterLink :to="`/langganan/pesanan/${membership.id}`" class="btn-primary">Lihat Pesanan</RouterLink>
+                            <RouterLink to="/langganan/kelola" class="btn-secondary">Kelola Langganan</RouterLink>
+                        </template>
+                        <template v-else-if="membership">
+                            <RouterLink to="/langganan/kelola" class="btn-primary">Kelola Langganan</RouterLink>
+                            <RouterLink to="/langganan/riwayat" class="btn-secondary">Riwayat Transaksi</RouterLink>
+                        </template>
+                        <template v-else>
+                            <a href="#paket" class="btn-primary">Pilih Paket</a>
+                            <RouterLink to="/langganan/riwayat" class="btn-secondary">Riwayat Transaksi</RouterLink>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="paket" class="mx-auto max-w-7xl scroll-mt-20 px-4 py-12">
             <p v-if="error" class="mb-6 rounded-2xl bg-error/10 px-4 py-3 text-center text-body-sm text-error" role="alert">{{ error }}</p>
 
             <div v-if="loading" class="grid gap-6 md:grid-cols-3">
@@ -137,27 +259,8 @@ onMounted(loadPlans)
             <div class="mx-auto max-w-7xl px-4">
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-headline-lg font-bold tracking-tight">Investasi terbaik untuk masa depanmu</h2>
-                    <p class="mt-3 text-body-lg text-on-surface-variant">
-                        Tingkatkan skill digital praktis dan bangun karier impian bersama ribuan alumni yang telah sukses bekerja di berbagai industri.
-                    </p>
+                    <p class="mt-2 text-body-lg text-on-surface-variant">Pilih paket yang paling sesuai dengan kebutuhanmu.</p>
                 </div>
-
-                <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <div v-for="benefit in benefits" :key="benefit.title" class="card">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <template v-if="benefit.icon === 'grid'"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></template>
-                                <template v-else-if="benefit.icon === 'award'"><circle cx="12" cy="8" r="5" /><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" /></template>
-                                <template v-else-if="benefit.icon === 'clock'"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></template>
-                                <template v-else><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></template>
-                            </svg>
-                        </div>
-                        <h3 class="mt-4 text-title-md font-semibold">{{ benefit.title }}</h3>
-                        <p class="mt-2 text-body-md text-on-surface-variant">{{ benefit.description }}</p>
-                    </div>
-                </div>
-
-                <p class="mt-8 text-center text-body-sm text-on-surface-variant">Harga dapat berubah. Pastikan detail paket sesuai sebelum melanjutkan.</p>
             </div>
         </section>
     </GuestLayout>

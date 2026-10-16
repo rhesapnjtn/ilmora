@@ -189,6 +189,11 @@ onMounted(loadDashboard)
                         </div>
                     </section>
                 </template>
+
+    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-on-surface-variant">
+      <span>&copy; 2026 Ilmora. Hak cipta dilindungi.</span>
+      <span class="flex gap-6"><a href="#" class="hover:text-primary">Kebijakan Privasi</a><a href="#" class="hover:text-primary">Syarat Layanan</a></span>
+    </div>
             </div>
         </div>
 

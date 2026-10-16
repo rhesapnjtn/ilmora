@@ -101,6 +101,19 @@ export function useAuth() {
         }
     }
 
+    async function forgotPassword(email: string): Promise<void> {
+        await api.post('/password/forgot', { email });
+    }
+
+    async function resetPassword(payload: {
+        email: string;
+        token: string;
+        password: string;
+        password_confirmation: string;
+    }): Promise<void> {
+        await api.post('/password/reset', payload);
+    }
+
     return {
         state,
         user: computed(() => state.user),
@@ -111,6 +124,8 @@ export function useAuth() {
         login,
         register,
         logout,
+        forgotPassword,
+        resetPassword,
         clearSession,
     };
 }

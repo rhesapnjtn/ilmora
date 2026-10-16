@@ -14,11 +14,20 @@ interface ActiveCourse {
     progress: number
 }
 
+interface Subscription {
+    plan: string | null
+    code: string | null
+    status: string
+    billingCycle: string | null
+    expiresAt: string | null
+    hasActive: boolean
+}
+
 interface Dashboard {
-    user: { name: string | null }
+    user: { name: string }
     progress: { percent: number; completed: number; total: number }
     streakDays: number
-    subscription: { plan: string; status: string; expiresAt: string }
+    subscription: Subscription
     activeCourses: ActiveCourse[]
 }
 
@@ -43,6 +52,7 @@ const dashOffset = computed(() => {
 const sidebarNav = [
     { label: 'Kursus Saya', to: '/dashboard', icon: 'book' },
     { label: 'Langganan', to: '/langganan', icon: 'spark' },
+    { label: 'Riwayat Transaksi', to: '/langganan/riwayat', icon: 'history' },
     { label: 'Sertifikat', to: '/sertifikat', icon: 'award' },
     { label: 'Pengaturan', to: '/profile', icon: 'cog' },
 ]
@@ -134,8 +144,12 @@ onMounted(loadDashboard)
                                     {{ data.progress.completed }} dari {{ data.progress.total }} kursus telah diselesaikan dengan baik.
                                 </p>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
-                                    <span class="badge-primary">Member {{ data.subscription.plan }}</span>
-                                    <span class="badge-success">{{ data.subscription.status }}</span>
+                                    <span :class="data.subscription.plan ? 'badge-primary' : 'badge-outline'">
+                                        {{ data.subscription.plan ? `Member ${data.subscription.plan}` : 'Belum Berlangganan' }}
+                                    </span>
+                                    <span :class="data.subscription.hasActive ? 'badge-success' : data.subscription.code === 'pending' ? 'badge-promo' : 'badge-outline'">
+                                        {{ data.subscription.status }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -182,10 +196,23 @@ onMounted(loadDashboard)
                     <section class="card mt-6">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h2 class="text-title-lg font-semibold">Paket {{ data.subscription.plan }} Aktif</h2>
-                                <p class="mt-1 text-body-md text-on-surface-variant">Aktif hingga {{ data.subscription.expiresAt }}</p>
+                                <template v-if="data.subscription.hasActive">
+                                    <h2 class="text-title-lg font-semibold">Paket {{ data.subscription.plan }} Aktif</h2>
+                                    <p class="mt-1 text-body-md text-on-surface-variant">Aktif hingga {{ data.subscription.expiresAt ?? '-' }}</p>
+                                </template>
+                                <template v-else-if="data.subscription.code === 'pending'">
+                                    <h2 class="text-title-lg font-semibold">Pesanan Menunggu Verifikasi</h2>
+                                    <p class="mt-1 text-body-md text-on-surface-variant">Selesaikan pembayaran paket {{ data.subscription.plan }} agar dapat diverifikasi oleh admin.</p>
+                                </template>
+                                <template v-else>
+                                    <h2 class="text-title-lg font-semibold">Belum Berlangganan</h2>
+                                    <p class="mt-1 text-body-md text-on-surface-variant">Aktifkan langganan untuk membuka seluruh materi premium Ilmora.</p>
+                                </template>
                             </div>
-                            <RouterLink to="/langganan" class="btn-secondary">Kelola Langganan</RouterLink>
+                            <div class="flex flex-wrap gap-2">
+                                <RouterLink v-if="data.subscription.plan" to="/langganan/riwayat" class="btn-secondary">Riwayat Transaksi</RouterLink>
+                                <RouterLink to="/langganan" class="btn-secondary">{{ data.subscription.hasActive ? 'Kelola Langganan' : 'Lihat Paket' }}</RouterLink>
+                            </div>
                         </div>
                     </section>
                 </template>

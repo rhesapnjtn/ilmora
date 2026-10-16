@@ -22,8 +22,7 @@ const billing = ref<'monthly' | 'annual'>('monthly')
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-const ctaHref = computed(() => (isAuthenticated.value ? '/dashboard' : '/daftar'))
-const memberLabel = computed(() => (user.value ? user.value.name.split(' ')[0] : 'Siswa Ilmora'))
+const memberLabel = computed(() => user.value?.name ?? 'Siswa Ilmora')
 
 const benefits = [
     { title: 'Katalog materi lengkap', description: 'Akses seluruh kursus premium Ilmora.', icon: 'grid' },
@@ -31,6 +30,14 @@ const benefits = [
     { title: 'Fleksibel belajar', description: 'Kapan saja dan di mana saja.', icon: 'clock' },
     { title: 'Dukungan mentor', description: 'Bimbingan interaktif dari praktisi.', icon: 'chat' },
 ]
+
+function planLink(plan: Plan): string {
+    if (!isAuthenticated.value) {
+        return '/daftar'
+    }
+
+    return `/langganan/paket/${encodeURIComponent(plan.id)}?billing=${billing.value}`
+}
 
 function priceFor(plan: Plan): number {
     return billing.value === 'annual' ? plan.annual : plan.monthly
@@ -121,7 +128,7 @@ onMounted(loadPlans)
                         </li>
                     </ul>
 
-                    <RouterLink :to="ctaHref" class="mt-8 w-full text-center" :class="plan.highlighted ? 'btn-primary' : 'btn-secondary'">Pilih Paket</RouterLink>
+                    <RouterLink :to="planLink(plan)" class="mt-8 w-full text-center" :class="plan.highlighted ? 'btn-primary' : 'btn-secondary'">Pilih Paket</RouterLink>
                 </div>
             </div>
         </section>

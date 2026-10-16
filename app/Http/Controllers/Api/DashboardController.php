@@ -36,9 +36,23 @@ class DashboardController extends Controller
             ],
         ];
 
+        $user = $request->user();
+
+        $activeSubscription = $user?->subscriptions()
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        $pendingSubscription = $user?->subscriptions()
+            ->where('status', 'pending')
+            ->latest('id')
+            ->first();
+
+        $subscription = $activeSubscription ?? $pendingSubscription;
+
         return response()->json([
             'user' => [
-                'name' => $request->user()?->name,
+                'name' => $user?->name,
             ],
             'progress' => [
                 'percent' => 65,
@@ -47,9 +61,12 @@ class DashboardController extends Controller
             ],
             'streakDays' => 5,
             'subscription' => [
-                'plan' => 'Premium',
-                'status' => 'Aktif',
-                'expiresAt' => '12 April 2026',
+                'plan' => $subscription?->plan,
+                'code' => $subscription?->status,
+                'status' => $this->statusLabel($subscription?->status),
+                'billingCycle' => $subscription?->billing_cycle,
+                'expiresAt' => $subscription?->expires_at?->translatedFormat('d F Y'),
+                'hasActive' => $activeSubscription !== null,
             ],
             'stats' => [
                 'courses' => 3,
@@ -59,5 +76,16 @@ class DashboardController extends Controller
             'activeCourses' => $activeCourses,
             'enrolledCourses' => $activeCourses,
         ]);
+    }
+
+    private function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'active' => 'Aktif',
+            'pending' => 'Menunggu Pembayaran',
+            'expired' => 'Kedaluwarsa',
+            'canceled' => 'Dibatalkan',
+            default => 'Belum Berlangganan',
+        };
     }
 }

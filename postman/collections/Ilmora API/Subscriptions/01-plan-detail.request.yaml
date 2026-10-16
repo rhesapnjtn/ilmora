@@ -1,0 +1,20 @@
+$kind: http-request
+name: Plan Detail
+method: GET
+url: '{{apiUrl}}/plans/{{planSlug}}'
+order: 1000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has plan detail and discountPercent', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('plan', 'discountPercent');
+        pm.expect(json.plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features');
+      });

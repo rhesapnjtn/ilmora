@@ -1,0 +1,12 @@
+$kind: collection
+name: Admin - Payments
+description: >-
+  Admin verification of subscription payments. Lists payments, approves the
+  pending payment created in Subscriptions, rejects a non-pending payment, then
+  confirms the subscription is active. Uses {{adminToken}}.
+order: 11000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

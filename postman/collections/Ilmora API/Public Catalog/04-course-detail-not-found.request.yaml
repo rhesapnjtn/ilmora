@@ -1,0 +1,18 @@
+$kind: http-request
+name: Course Detail (not found)
+method: GET
+url: '{{apiUrl}}/courses/not-a-real-course'
+order: 4000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 404 Not Found', () => pm.response.to.have.status(404));
+      pm.test('response has message', () => {
+        pm.expect(pm.response.json()).to.have.property('message');
+      });

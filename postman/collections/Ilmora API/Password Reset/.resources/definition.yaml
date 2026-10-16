@@ -1,0 +1,4 @@
+$kind: collection
+name: Password Reset
+description: Forgot / reset password flow. The endpoints are public and rate limited (5/min per email+IP).
+order: 2000

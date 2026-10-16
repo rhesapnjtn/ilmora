@@ -1021,3 +1021,7 @@ Setiap perubahan pada Ilmora harus dapat dijelaskan, diuji, dipelihara, dan dise
 Jika instruksi tugas bertentangan dengan praktik keamanan atau integritas data, jangan menerapkan perubahan berisiko secara diam-diam. Jelaskan konflik tersebut dan ajukan pendekatan yang lebih aman.
 
 **Dokumen ini merupakan pedoman utama pengembangan Ilmora.** Jika konfigurasi proyek aktual berbeda dari contoh di atas, periksa implementasi terlebih dahulu dan sesuaikan perubahan tanpa mengorbankan keamanan, kualitas kode, atau integritas data.
+
+<API_TASKS>
+Before responding to any non-trivial API engineering task — designing, implementing, mocking, testing, monitoring, documenting, or deploying an API or Postman Flow — read `postman/skills/api-engineer/SKILL.md` and follow it. It is the default entry point for API work in this repository. Pure questions and trivial one-line edits do not need it.
+</API_TASKS>

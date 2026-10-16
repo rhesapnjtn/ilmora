@@ -1,0 +1,21 @@
+$kind: http-request
+name: Course Detail
+method: GET
+url: '{{apiUrl}}/courses/{{courseSlug}}'
+order: 3000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('course detail has curriculum and includes', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('course');
+        pm.expect(json.course).to.include.keys('slug', 'title', 'curriculum', 'learn', 'includes');
+        pm.expect(json.course.curriculum).to.be.an('array');
+      });

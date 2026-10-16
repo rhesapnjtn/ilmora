@@ -1,0 +1,48 @@
+$kind: http-request
+name: 'Register'
+method: POST
+url: '{{apiUrl}}/register'
+order: 1000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{testUserName}}",
+      "email": "{{testRunEmail}}",
+      "password": "{{testUserPassword}}",
+      "password_confirmation": "{{testUserPassword}}"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      // Generate a unique email per run so the collection is repeatable and
+      // the registration endpoint is not rate-limited across re-runs.
+      if (!pm.collectionVariables.get('testRunEmail')) {
+        pm.collectionVariables.set('testRunEmail', 'tester+' + Date.now() + '@example.com');
+      }
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('response has user and token', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('user');
+        pm.expect(json).to.have.property('token').that.is.a('string').and.is.not.empty;
+        pm.expect(json.user).to.include.keys('id', 'name', 'email');
+        pm.expect(json.user).to.not.have.property('password');
+      });
+      const json = pm.response.json();
+      if (json.token) {
+        pm.collectionVariables.set('token', json.token);
+        if (json.user && json.user.email === pm.environment.get('adminEmail')) {
+          pm.collectionVariables.set('adminToken', json.token);
+        }
+      }

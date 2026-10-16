@@ -1,0 +1,26 @@
+$kind: http-request
+name: Update Profile (invalid email)
+method: PUT
+url: '{{apiUrl}}/profile'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{currentUserName}}",
+      "email": "not-an-email"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('validation error on email', () => {
+        const json = pm.response.json();
+        pm.expect(json.errors).to.have.property('email');
+      });

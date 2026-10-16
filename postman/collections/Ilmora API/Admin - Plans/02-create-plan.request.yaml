@@ -1,0 +1,36 @@
+$kind: http-request
+name: Create Plan
+method: POST
+url: '{{apiUrl}}/admin/plans'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Paket Uji Otomatis",
+      "monthly": 50000,
+      "annual": 500000,
+      "highlighted": false,
+      "is_active": true,
+      "sort_order": 99,
+      "features": ["Fitur uji 1", "Fitur uji 2"]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns created plan', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.plan).to.include.keys('id', 'slug', 'name', 'monthly', 'annual', 'isActive');
+      });
+      const json = pm.response.json();
+      if (json.plan) {
+        pm.environment.set('planId', String(json.plan.id));
+      }

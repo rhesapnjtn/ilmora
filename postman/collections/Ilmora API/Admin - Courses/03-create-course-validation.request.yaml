@@ -1,0 +1,26 @@
+$kind: http-request
+name: Create Course (validation error)
+method: POST
+url: '{{apiUrl}}/admin/courses'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "summary": "Tanpa judul dan harga."
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('reports title and price errors', () => {
+        const json = pm.response.json();
+        pm.expect(json.errors).to.have.property('title');
+        pm.expect(json.errors).to.have.property('price');
+      });

@@ -1,0 +1,9 @@
+$kind: collection
+name: Admin - Courses
+description: Course CRUD and publish toggle. Creates a course, exercises it, then deletes it.
+order: 7000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

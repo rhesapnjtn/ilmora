@@ -1,0 +1,4 @@
+$kind: collection
+name: Profile
+description: Update the signed-in user's profile and password.
+order: 5000

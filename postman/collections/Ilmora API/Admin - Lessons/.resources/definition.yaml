@@ -1,0 +1,11 @@
+$kind: collection
+name: Admin - Lessons
+description: >-
+  Lesson create/update/delete against the course created in Admin - Courses.
+  Requires a populated {{courseId}}.
+order: 8000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

@@ -1,0 +1,35 @@
+$kind: http-request
+name: List Users
+method: GET
+url: '{{apiUrl}}/admin/users?page=1'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+queryParams:
+  - key: search
+    value: tester
+    disabled: true
+    description: Matches name or email
+  - key: role
+    value: user
+    disabled: true
+    description: user | admin
+  - key: page
+    value: '1'
+    disabled: false
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has paginated user list', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('users', 'meta', 'filters');
+        pm.expect(json.users).to.be.an('array');
+        pm.expect(json.meta).to.include.keys('page', 'perPage', 'total', 'lastPage');
+      });
+      const json = pm.response.json();
+      if (json.users && json.users.length > 0) {
+        pm.environment.set('userId', String(json.users[0].id));
+      }

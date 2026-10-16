@@ -1,0 +1,29 @@
+$kind: http-request
+name: Update Course
+method: PUT
+url: '{{apiUrl}}/admin/courses/{{courseId}}'
+order: 5000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Kursus Uji Otomatis (diperbarui)",
+      "price": 175000,
+      "level": "Menengah"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns updated course', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.course.title).to.eql('Kursus Uji Otomatis (diperbarui)');
+        pm.expect(json.course.price).to.eql(175000);
+      });

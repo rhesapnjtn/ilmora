@@ -1,0 +1,13 @@
+$kind: collection
+description: REST API tests for Ilmora (Laravel 12 + Sanctum). Run with the "Ilmora Local" environment against a locally running `php artisan serve` instance. Public requests need no token; authenticated requests read `{{token}}`; admin requests read `{{adminToken}}` (both captured automatically by the Login / Register requests in the Auth folder).
+variables:
+  token: ""
+  adminToken: ""
+  testRunEmail: ""
+  currentUserName: ""
+  currentUserEmail: ""
+  currentUserId: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"

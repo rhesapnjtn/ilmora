@@ -1,0 +1,27 @@
+$kind: http-request
+name: List Courses
+method: GET
+url: '{{apiUrl}}/courses'
+order: 1000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has catalog structure', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('courses', 'categories', 'levels', 'meta', 'filters');
+        pm.expect(json.courses).to.be.an('array');
+        pm.expect(json.meta).to.include.keys('page', 'perPage', 'total', 'lastPage');
+      });
+      pm.test('only published courses are returned', () => {
+        const json = pm.response.json();
+        json.courses.forEach((course) => {
+          pm.expect(course).to.include.keys('slug', 'title', 'category', 'level', 'price', 'free');
+        });
+      });

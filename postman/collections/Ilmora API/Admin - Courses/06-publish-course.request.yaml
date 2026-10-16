@@ -1,0 +1,23 @@
+$kind: http-request
+name: Publish Course
+method: POST
+url: '{{apiUrl}}/admin/courses/{{courseId}}/publish'
+order: 6000
+description: Toggles the published flag on the course created in this run.
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns toggled course', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.course).to.have.property('published').that.is.a('boolean');
+      });
+      const json = pm.response.json();
+      if (json.course) {
+        pm.environment.set('coursePublished', String(json.course.published));
+      }

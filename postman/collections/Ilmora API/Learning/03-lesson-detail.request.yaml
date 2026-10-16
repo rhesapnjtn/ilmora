@@ -1,0 +1,19 @@
+$kind: http-request
+name: Lesson Detail
+method: GET
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}'
+order: 3000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns course, lesson, navigation and progress', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('course', 'lesson', 'lessons', 'prev', 'next', 'progress');
+        pm.expect(json.lesson).to.include.keys('id', 'title', 'index', 'total');
+        pm.expect(json.lessons).to.be.an('array');
+      });

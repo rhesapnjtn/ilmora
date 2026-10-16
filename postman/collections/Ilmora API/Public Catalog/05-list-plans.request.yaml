@@ -1,0 +1,26 @@
+$kind: http-request
+name: List Plans
+method: GET
+url: '{{apiUrl}}/plans'
+order: 5000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has plans and discountPercent', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('plans', 'discountPercent');
+        pm.expect(json.plans).to.be.an('array');
+      });
+      pm.test('plans expose pricing and features', () => {
+        const json = pm.response.json();
+        json.plans.forEach((plan) => {
+          pm.expect(plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features');
+        });
+      });

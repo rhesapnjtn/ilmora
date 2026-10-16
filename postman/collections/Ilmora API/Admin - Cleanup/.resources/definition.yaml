@@ -1,0 +1,9 @@
+$kind: collection
+name: Admin - Cleanup
+description: Removes the course created during the run so the collection can be re-run.
+order: 11500
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

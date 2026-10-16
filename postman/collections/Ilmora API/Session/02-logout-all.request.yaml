@@ -1,0 +1,21 @@
+$kind: http-request
+name: Logout All
+method: POST
+url: '{{apiUrl}}/logout-all'
+order: 2000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('response has message', () => {
+        pm.expect(pm.response.json()).to.have.property('message');
+      });

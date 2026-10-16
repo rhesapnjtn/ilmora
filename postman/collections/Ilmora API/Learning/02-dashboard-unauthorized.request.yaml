@@ -1,0 +1,18 @@
+$kind: http-request
+name: Dashboard (unauthorized)
+method: GET
+url: '{{apiUrl}}/dashboard'
+order: 2000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 401 Unauthorized', () => pm.response.to.have.status(401));
+      pm.test('response has message', () => {
+        pm.expect(pm.response.json()).to.have.property('message');
+      });

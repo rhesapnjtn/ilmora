@@ -21,8 +21,17 @@ CLI:
 postman collection run "postman/collections/Ilmora API" -e "postman/environments/Ilmora Local.environment.yaml"
 ```
 
-Or open `postman/collections/Ilmora API` in the Postman app and select the
-**Ilmora Local** environment.
+Postman app:
+
+1. **Files → Open folder** and pick this repository, then switch to **Local
+   View**.
+2. Select **Ilmora Local** in the top-right environment picker. Opening the
+   environment file is *not* enough — it must be the **active** environment,
+   otherwise every `{{variable}}` resolves to empty and requests fail with
+   `422` (e.g. Register/Login).
+3. Open the Collection Runner (right-click the collection → **Run
+   collection**), confirm **Environment → Ilmora Local** is selected there as
+   well, then **Run**.
 
 ## Environment variables
 

@@ -1,17 +1,17 @@
 $kind: collection
-description: REST API tests for Ilmora (Laravel 12 + Sanctum). Run with the "Ilmora Local" environment against a locally running `php artisan serve` instance. Public requests need no token; authenticated requests read `{{token}}`; admin requests read `{{adminToken}}` (both captured automatically by the Login / Register requests in the Auth folder).
+description: REST API tests for Ilmora (Laravel + Sanctum). Defaults for every variable are defined here, so the collection runs against a local `php artisan serve` instance without selecting an environment; the optional "Ilmora Local" environment overrides them. Public requests need no token; authenticated requests read {{token}}; admin requests read {{adminToken}} (both captured automatically by the Auth requests).
 variables:
-  baseUrl: "http://127.0.0.1:8000"
+  baseUrl: http://127.0.0.1:8000
   apiUrl: "{{baseUrl}}/api"
-  adminEmail: "admin@ilmora.test"
-  adminPassword: "password"
-  testUserName: "Tester Ilmora"
-  testUserPassword: "Password123"
-  newPassword: "Password1234"
-  courseSlug: "laravel-vue-3-full-stack"
-  lessonSlug: "2-1"
-  certificateId: "ilr-cert-2026-001"
-  planSlug: "basic"
+  adminEmail: admin@ilmora.test
+  adminPassword: password
+  testUserName: Tester Ilmora
+  testUserPassword: Password123
+  newPassword: Password1234
+  courseSlug: laravel-vue-3-full-stack
+  lessonSlug: 2-1
+  certificateId: ilr-cert-2026-001
+  planSlug: basic
   courseId: ""
   lessonId: ""
   planId: ""
@@ -27,3 +27,30 @@ auth:
   type: bearer
   credentials:
     token: "{{token}}"
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      // Safety net: make sure the config variables are never empty, so the
+      // suite works even if no (or an empty) environment is selected.
+      const defaults = {
+        baseUrl: 'http://127.0.0.1:8000',
+        apiUrl: '{{baseUrl}}/api',
+        adminEmail: 'admin@ilmora.test',
+        adminPassword: 'password',
+        testUserName: 'Tester Ilmora',
+        testUserPassword: 'Password123',
+        newPassword: 'Password1234',
+        courseSlug: 'laravel-vue-3-full-stack',
+        lessonSlug: '2-1',
+        certificateId: 'ilr-cert-2026-001',
+        planSlug: 'basic',
+      };
+      Object.keys(defaults).forEach(function (key) {
+        if (!pm.variables.get(key)) {
+          pm.collectionVariables.set(key, defaults[key]);
+          if (pm.environment.name) {
+            pm.environment.set(key, defaults[key]);
+          }
+        }
+      });
+    language: text/javascript

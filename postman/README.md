@@ -25,22 +25,27 @@ Postman app:
 
 1. **Files → Open folder** and pick this repository, then switch to **Local
    View**.
-2. Select **Ilmora Local** in the top-right environment picker. Opening the
-   environment file is *not* enough — it must be the **active** environment,
-   otherwise every `{{variable}}` resolves to empty and requests fail with
-   `422` (e.g. Register/Login).
-3. Open the Collection Runner (right-click the collection → **Run
-   collection**), confirm **Environment → Ilmora Local** is selected there as
-   well, then **Run**.
+2. Open the Collection Runner (right-click the collection → **Run collection**)
+   and click **Run**. No environment is required — the collection ships
+   built-in default variables (see below), so a fresh run works as-is.
+3. (Optional) Select **Ilmora Local** in the top-right environment picker (and
+   in the Runner) to override the defaults, e.g. to point at a different host
+   or credentials.
 
-## Environment variables
+## Variables
 
-| Variable          | Purpose                                              |
+Defaults live in
+`postman/collections/Ilmora API/.resources/definition.yaml`, so the collection
+runs with **no environment selected**. The optional **Ilmora Local**
+environment overrides them (e.g. to point at a different host).
+
+| Variable          | Default / purpose                                    |
 | ----------------- | ---------------------------------------------------- |
-| `baseUrl`         | App origin (default `http://127.0.0.1:8000`)         |
+| `baseUrl`         | App origin (`http://127.0.0.1:8000`)                 |
 | `apiUrl`          | `{{baseUrl}}/api`                                    |
 | `adminEmail` / `adminPassword` | Seeded admin (`admin@ilmora.test` / `password`) |
-| `testUserPassword` / `newPassword` | Password used by the register / change-password flows |
+| `testUserName` / `testUserPassword` | Account used by the register / login flows |
+| `newPassword`     | New password used by the change-password flow        |
 | `courseSlug`, `lessonSlug`, `certificateId`, `planSlug` | Sample record identifiers from the seeders |
 | `courseId`, `lessonId`, `planId`, `userId` | Filled in automatically during a run     |
 | `resetToken`      | Optional — set manually to test the reset-password happy path |

@@ -1,6 +1,22 @@
 $kind: collection
 description: REST API tests for Ilmora (Laravel 12 + Sanctum). Run with the "Ilmora Local" environment against a locally running `php artisan serve` instance. Public requests need no token; authenticated requests read `{{token}}`; admin requests read `{{adminToken}}` (both captured automatically by the Login / Register requests in the Auth folder).
 variables:
+  baseUrl: "http://127.0.0.1:8000"
+  apiUrl: "{{baseUrl}}/api"
+  adminEmail: "admin@ilmora.test"
+  adminPassword: "password"
+  testUserName: "Tester Ilmora"
+  testUserPassword: "Password123"
+  newPassword: "Password1234"
+  courseSlug: "laravel-vue-3-full-stack"
+  lessonSlug: "2-1"
+  certificateId: "ilr-cert-2026-001"
+  planSlug: "basic"
+  courseId: ""
+  lessonId: ""
+  planId: ""
+  userId: ""
+  resetToken: ""
   token: ""
   adminToken: ""
   testRunEmail: ""

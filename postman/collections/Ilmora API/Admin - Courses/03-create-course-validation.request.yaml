@@ -2,7 +2,7 @@ $kind: http-request
 name: Create Course (validation error)
 method: POST
 url: '{{apiUrl}}/admin/courses'
-order: 2000
+order: 3000
 headers:
   - key: Accept
     value: application/json

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Models\CourseLesson;
 use App\Models\User;
 use Database\Seeders\CourseSeeder;
 use Database\Seeders\PlanSeeder;
@@ -63,6 +64,18 @@ class ApiEndpointsTest extends TestCase
             ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/2-1')
             ->assertOk()
             ->assertJsonStructure(['course', 'lesson', 'lessons', 'prev', 'next', 'progress']);
+    }
+
+    public function test_lesson_exposes_video_url(): void
+    {
+        $user = User::factory()->create();
+        $lesson = CourseLesson::query()->where('slug', '2-1')->firstOrFail();
+        $lesson->update(['video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
+
+        $this->withToken($user->createToken('test')->plainTextToken)
+            ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/2-1')
+            ->assertOk()
+            ->assertJsonPath('lesson.videoUrl', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     }
 
     public function test_certificates_require_authentication(): void

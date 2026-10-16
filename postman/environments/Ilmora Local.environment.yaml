@@ -56,4 +56,6 @@ values:
   - key: paymentId
     value: ''
     description: Database id of a payment (set by Subscriptions Create Order)
+  - key: cancelSubscriptionId
+    value: ''
 color: 0

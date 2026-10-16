@@ -8,6 +8,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Input from '@/Components/Input.vue'
 import Modal from '@/Components/Modal.vue'
 import api from '@/lib/api'
+import { normalizeApiError } from '@/lib/errors'
 
 interface Category { slug: string; name: string }
 interface Lesson {
@@ -16,6 +17,7 @@ interface Lesson {
     title: string
     module: string | null
     duration: string | null
+    videoUrl: string | null
     order: number
     isFree: boolean
 }
@@ -62,7 +64,10 @@ const form = reactive({
 const lessonModalOpen = ref(false)
 const editingLesson = ref<Lesson | null>(null)
 const lessonSaving = ref(false)
-const lessonForm = reactive({ title: '', module: '', duration: '', order: 0, is_free: false })
+const lessonForm = reactive({ title: '', module: '', duration: '', video_url: '', order: 0, is_free: false })
+const videoFile = ref<File | null>(null)
+const videoUploading = ref(false)
+const videoRemoving = ref(false)
 
 const lessonDeleteOpen = ref(false)
 const lessonDeleting = ref(false)
@@ -187,6 +192,7 @@ function openLessonModal(lesson?: Lesson): void {
     lessonForm.title = lesson?.title ?? ''
     lessonForm.module = lesson?.module ?? ''
     lessonForm.duration = lesson?.duration ?? ''
+    lessonForm.video_url = lesson?.videoUrl ?? ''
     lessonForm.order = lesson?.order ?? lessons.value.length + 1
     lessonForm.is_free = lesson?.isFree ?? false
     lessonModalOpen.value = true
@@ -195,21 +201,84 @@ function openLessonModal(lesson?: Lesson): void {
 async function saveLesson(): Promise<void> {
     if (!courseId.value) return
     lessonSaving.value = true
+    error.value = null
     try {
+        let lessonId: number
+
         if (editingLesson.value) {
             const { data } = await api.put(`/admin/courses/${courseId.value}/lessons/${editingLesson.value.id}`, lessonForm)
             const index = lessons.value.findIndex((item) => item.id === editingLesson.value?.id)
             if (index !== -1) lessons.value[index] = data.lesson
+            lessonId = editingLesson.value.id
         } else {
             const { data } = await api.post(`/admin/courses/${courseId.value}/lessons`, lessonForm)
             lessons.value.push(data.lesson)
+            lessonId = data.lesson.id
         }
+
         lessons.value = [...lessons.value].sort((a, b) => a.order - b.order)
+
+        if (videoFile.value) {
+            await uploadVideo(lessonId)
+        }
+
         lessonModalOpen.value = false
-    } catch {
-        error.value = 'Gagal menyimpan pelajaran.'
+        videoFile.value = null
+    } catch (err) {
+        error.value = normalizeApiError(err).message ?? 'Gagal menyimpan pelajaran.'
     } finally {
         lessonSaving.value = false
+    }
+}
+
+function onVideoFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement
+    videoFile.value = input.files?.[0] ?? null
+}
+
+async function uploadVideo(lessonId: number): Promise<void> {
+    if (!courseId.value || !videoFile.value) return
+
+    videoUploading.value = true
+    error.value = null
+
+    try {
+        const form = new FormData()
+        form.append('video', videoFile.value)
+
+        const { data } = await api.post(`/admin/courses/${courseId.value}/lessons/${lessonId}/video`, form)
+        lessonForm.video_url = data.lesson.videoUrl ?? ''
+
+        const index = lessons.value.findIndex((item) => item.id === lessonId)
+        if (index !== -1) lessons.value[index] = data.lesson
+
+        videoFile.value = null
+        notice.value = 'Video berhasil diunggah.'
+    } catch (err) {
+        error.value = normalizeApiError(err).message ?? 'Gagal mengunggah video.'
+    } finally {
+        videoUploading.value = false
+    }
+}
+
+async function removeVideo(): Promise<void> {
+    if (!courseId.value || !editingLesson.value) return
+
+    videoRemoving.value = true
+    error.value = null
+
+    try {
+        const { data } = await api.delete(`/admin/courses/${courseId.value}/lessons/${editingLesson.value.id}/video`)
+        lessonForm.video_url = data.lesson.videoUrl ?? ''
+
+        const index = lessons.value.findIndex((item) => item.id === editingLesson.value?.id)
+        if (index !== -1) lessons.value[index] = data.lesson
+
+        notice.value = 'Video berhasil dihapus.'
+    } catch (err) {
+        error.value = normalizeApiError(err).message ?? 'Gagal menghapus video.'
+    } finally {
+        videoRemoving.value = false
     }
 }
 
@@ -392,6 +461,30 @@ onMounted(() => {
                         <label class="label" for="lesson-order">Urutan</label>
                         <input id="lesson-order" v-model.number="lessonForm.order" type="number" min="1" class="input" />
                     </div>
+                </div>
+                <div>
+                    <label class="label" for="lesson-video-file">Upload Video</label>
+                    <input
+                        id="lesson-video-file"
+                        type="file"
+                        accept="video/*"
+                        class="input"
+                        :disabled="videoUploading"
+                        @change="onVideoFileChange"
+                    />
+                    <p class="mt-1 text-body-sm text-on-surface-variant">
+                        MP4, WebM, OGG, atau MOV (maks 500 MB).
+                        <span v-if="videoFile" class="font-medium text-on-surface">Terpilih: {{ videoFile.name }}</span>
+                    </p>
+                </div>
+                <Input
+                    v-model="lessonForm.video_url"
+                    label="Video URL"
+                    placeholder="https://youtube.com/watch?v=... atau link video .mp4"
+                />
+                <p class="-mt-2 text-body-sm text-on-surface-variant">Kosongkan jika pelajaran ini tidak memiliki video.</p>
+                <div v-if="lessonForm.video_url">
+                    <Button variant="secondary" size="sm" :loading="videoRemoving" @click="removeVideo">Hapus Video</Button>
                 </div>
                 <label class="flex items-center gap-3 text-body-md">
                     <input v-model="lessonForm.is_free" type="checkbox" class="h-5 w-5 rounded text-primary" />

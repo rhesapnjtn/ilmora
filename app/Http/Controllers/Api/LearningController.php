@@ -54,6 +54,7 @@ class LearningController extends Controller
                 'description' => $current->description,
                 'code' => $current->code,
                 'materials' => $current->materials ?? [],
+                'videoUrl' => $current->video_url,
             ],
             'lessons' => $lessons->map(fn (CourseLesson $item): array => [
                 'id' => $item->slug,

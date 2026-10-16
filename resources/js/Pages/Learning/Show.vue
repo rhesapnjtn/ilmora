@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import api from '@/lib/api'
 
 interface LessonItem { id: string; title: string; duration: string; module?: string }
-interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; materials: { label: string; size: string; type: string }[] }
+interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; materials: { label: string; size: string; type: string }[] }
 interface Payload {
     course: { slug: string; title: string; level: string; lessonsCount: number; instructor: { name: string; role: string } }
     lesson: Lesson
@@ -24,6 +24,30 @@ const activeTab = ref<'description' | 'notes' | 'discussion'>('description')
 const note = ref('')
 
 const completedCount = computed(() => data.value?.lesson.index ?? 0)
+
+const video = computed<{ kind: 'embed' | 'file'; src: string } | null>(() => {
+    const url = data.value?.lesson.videoUrl
+
+    if (!url) {
+        return null
+    }
+
+    const youtube = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/)
+    if (youtube) {
+        return { kind: 'embed', src: `https://www.youtube.com/embed/${youtube[1]}` }
+    }
+
+    const vimeo = url.match(/vimeo\.com\/(\d+)/)
+    if (vimeo) {
+        return { kind: 'embed', src: `https://player.vimeo.com/video/${vimeo[1]}` }
+    }
+
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+        return { kind: 'file', src: url }
+    }
+
+    return null
+})
 
 async function load(): Promise<void> {
     loading.value = true
@@ -65,13 +89,30 @@ watch(() => route.params.lesson, load)
         <div v-else-if="data" class="grid gap-8 lg:grid-cols-3">
             <div class="lg:col-span-2">
                 <div class="relative overflow-hidden rounded-2xl bg-on-surface">
-                    <div class="flex aspect-video items-center justify-center bg-gradient-to-br from-[#1E1B4B] to-[#4C1D95]">
-                        <button type="button" class="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg transition-transform hover:scale-105" aria-label="Putar video pelajaran">
-                            <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-                        </button>
+                    <iframe
+                        v-if="video?.kind === 'embed'"
+                        :src="video.src"
+                        class="aspect-video w-full"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        title="Video pelajaran"
+                    />
+                    <video
+                        v-else-if="video?.kind === 'file'"
+                        :src="video.src"
+                        class="aspect-video w-full"
+                        controls
+                        preload="metadata"
+                    />
+                    <div v-else class="flex aspect-video flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#1E1B4B] to-[#4C1D95]">
+                        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-white/80" aria-hidden="true">
+                            <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M15.6 4.6 12 2 8.4 4.6 4.8 5.4 2.6 9l3 3.4-1 3.8 3.2-2 3 2-1-3.8 3-3.4-2.2-3.4 2.2-2.4z" />
+                            </svg>
+                        </span>
+                        <p class="text-body-sm font-medium text-white/80">Video untuk pelajaran ini belum tersedia.</p>
                     </div>
-                    <span class="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-label-sm font-medium text-white">DIPUTAR</span>
-                    <span class="absolute bottom-4 right-4 rounded-full bg-black/40 px-3 py-1 text-label-sm font-medium text-white">04:25 / 18:15</span>
                 </div>
 
                 <div class="mt-6 flex flex-wrap items-center gap-3">

@@ -13,7 +13,8 @@ body:
   content: |-
     {
       "title": "Pelajaran Uji Otomatis (diperbarui)",
-      "duration": "12:30"
+      "duration": "12:30",
+      "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     }
 scripts:
   - type: afterResponse
@@ -25,4 +26,5 @@ scripts:
         pm.expect(json).to.have.property('message');
         pm.expect(json.lesson.title).to.eql('Pelajaran Uji Otomatis (diperbarui)');
         pm.expect(json.lesson.duration).to.eql('12:30');
+        pm.expect(json.lesson.videoUrl).to.eql('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
       });

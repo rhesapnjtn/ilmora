@@ -50,4 +50,10 @@ values:
     description: Valid reset token from the reset email or password_reset_tokens table
   - key: coursePublished
     value: ''
+  - key: subscriptionId
+    value: ''
+    description: Database id of a subscription order (set by Subscriptions Create Order)
+  - key: paymentId
+    value: ''
+    description: Database id of a payment (set by Subscriptions Create Order)
 color: 0

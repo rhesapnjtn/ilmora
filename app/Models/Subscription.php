@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
@@ -18,7 +19,9 @@ class Subscription extends Model
      */
     protected $fillable = [
         'user_id',
+        'plan_id',
         'plan',
+        'billing_cycle',
         'status',
         'starts_at',
         'expires_at',
@@ -44,6 +47,25 @@ class Subscription extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The `plan` column holds a denormalized plan name, so the relation that
+     * exposes the related model is named after the entitlement it represents.
+     *
+     * @return BelongsTo<Plan, $this>
+     */
+    public function planRecord(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'plan_id');
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     /**

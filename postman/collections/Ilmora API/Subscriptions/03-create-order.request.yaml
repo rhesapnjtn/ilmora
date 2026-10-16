@@ -1,0 +1,40 @@
+$kind: http-request
+name: Create Subscription Order
+method: POST
+url: '{{apiUrl}}/subscriptions'
+order: 3000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "plan": "{{planSlug}}",
+      "billing_cycle": "monthly",
+      "payment_method": "bank_transfer",
+      "notes": "Order created by the Postman collection run"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns a pending order with payment instructions', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        const order = json.subscription;
+        pm.expect(order).to.include.keys('id', 'plan', 'billingCycle', 'status', 'amount', 'currency', 'payment');
+        pm.expect(order.status).to.eql('pending');
+        pm.expect(order.payment).to.include.keys('id', 'reference', 'status');
+        pm.expect(order.payment.status).to.eql('pending');
+      });
+      const json = pm.response.json();
+      if (json.subscription) {
+        pm.environment.set('subscriptionId', String(json.subscription.id));
+        if (json.subscription.payment) {
+          pm.environment.set('paymentId', String(json.subscription.payment.id));
+        }
+      }

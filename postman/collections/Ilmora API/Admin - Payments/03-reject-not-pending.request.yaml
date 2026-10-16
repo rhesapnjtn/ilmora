@@ -1,0 +1,18 @@
+$kind: http-request
+name: Reject Payment (not pending)
+method: POST
+url: '{{apiUrl}}/admin/payments/{{paymentId}}/reject'
+order: 3000
+description: The payment was just approved, so rejecting it must fail with 422.
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('explains only pending payments can be rejected', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+      });

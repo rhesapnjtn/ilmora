@@ -1,0 +1,26 @@
+$kind: http-request
+name: List Subscriptions (admin)
+method: GET
+url: '{{apiUrl}}/admin/subscriptions'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has subscriptions, summary and meta', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('subscriptions').that.is.an('array');
+        pm.expect(json.summary).to.include.keys('total', 'pending', 'active', 'expired', 'canceled');
+        pm.expect(json).to.have.property('meta');
+      });
+      pm.test('the approved subscription is now active', () => {
+        const json = pm.response.json();
+        const target = Number(pm.environment.get('subscriptionId'));
+        const match = json.subscriptions.find((item) => item.id === target);
+        pm.expect(match, 'approved subscription should be listed').to.exist;
+        pm.expect(match.status).to.eql('active');
+      });

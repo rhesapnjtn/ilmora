@@ -1,0 +1,20 @@
+$kind: http-request
+name: Order Detail
+method: GET
+url: '{{apiUrl}}/subscriptions/{{subscriptionId}}'
+order: 5000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns the pending order with payment instructions', () => {
+        const json = pm.response.json();
+        const order = json.subscription;
+        pm.expect(order).to.include.keys('id', 'plan', 'billingCycle', 'status', 'amount', 'currency', 'payment');
+        pm.expect(order.status).to.eql('pending');
+        pm.expect(order.payment).to.include.keys('id', 'reference', 'status', 'paymentMethod');
+      });

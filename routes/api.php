@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\PasswordController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,7 @@ Route::post('/password/reset', [PasswordController::class, 'reset'])->middleware
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{slug}', [CourseController::class, 'show']);
 Route::get('/plans', [SubscriptionController::class, 'index']);
+Route::get('/plans/{slug}', [SubscriptionController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
@@ -41,6 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/certificates', [CertificateController::class, 'index']);
     Route::get('/certificates/{id}', [CertificateController::class, 'show']);
+
+    Route::get('/subscriptions', [SubscriptionController::class, 'mine']);
+    Route::post('/subscriptions', [SubscriptionController::class, 'store']);
+    Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'order']);
+
+    Route::get('/payments', [PaymentController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
@@ -70,4 +78,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
     Route::get('/payments', [AdminPaymentController::class, 'index']);
+    Route::post('/payments/{payment}/approve', [AdminPaymentController::class, 'approve']);
+    Route::post('/payments/{payment}/reject', [AdminPaymentController::class, 'reject']);
 });

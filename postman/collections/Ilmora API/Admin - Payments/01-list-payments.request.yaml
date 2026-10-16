@@ -1,0 +1,27 @@
+$kind: http-request
+name: List Payments
+method: GET
+url: '{{apiUrl}}/admin/payments'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has payments list and summary', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('payments').that.is.an('array');
+        pm.expect(json.summary).to.include.keys('total', 'pending', 'success', 'failed', 'refunded', 'revenue');
+        pm.expect(json.meta).to.include.keys('page', 'perPage', 'total', 'lastPage');
+      });
+      pm.test('includes the pending payment created earlier', () => {
+        const json = pm.response.json();
+        const target = Number(pm.environment.get('paymentId'));
+        const match = json.payments.find((item) => item.id === target);
+        pm.expect(match, 'pending payment should be listed').to.exist;
+        pm.expect(match.status).to.eql('pending');
+        pm.expect(match.subscription).to.include.keys('id', 'plan', 'billingCycle', 'status');
+      });

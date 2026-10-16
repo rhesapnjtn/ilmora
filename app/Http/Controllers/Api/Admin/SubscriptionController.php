@@ -38,6 +38,7 @@ class SubscriptionController extends Controller
                     'email' => $subscription->user?->email,
                 ],
                 'plan' => $subscription->plan,
+                'billingCycle' => $subscription->billing_cycle,
                 'status' => $subscription->status,
                 'amount' => (float) $subscription->amount,
                 'currency' => $subscription->currency,
@@ -47,6 +48,7 @@ class SubscriptionController extends Controller
             ])->all(),
             'summary' => [
                 'total' => Subscription::query()->count(),
+                'pending' => Subscription::query()->where('status', 'pending')->count(),
                 'active' => Subscription::query()->where('status', 'active')->count(),
                 'expired' => Subscription::query()->where('status', 'expired')->count(),
                 'canceled' => Subscription::query()->where('status', 'canceled')->count(),

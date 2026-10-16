@@ -1,0 +1,21 @@
+$kind: http-request
+name: List My Payments
+method: GET
+url: '{{apiUrl}}/payments'
+order: 6000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('lists the signed-in user payments', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('payments').that.is.an('array');
+        const target = Number(pm.environment.get('paymentId'));
+        const match = json.payments.find((item) => item.id === target);
+        pm.expect(match, 'created payment should be listed').to.exist;
+        pm.expect(match).to.include.keys('reference', 'amount', 'currency', 'status', 'subscriptionId', 'plan');
+      });

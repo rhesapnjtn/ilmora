@@ -35,6 +35,24 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Langganan' },
     },
     {
+        path: '/langganan/paket/:slug',
+        name: 'subscription-checkout',
+        component: () => import('@/Pages/Subscriptions/Checkout.vue'),
+        meta: { title: 'Checkout Langganan', requiresAuth: true },
+    },
+    {
+        path: '/langganan/pesanan/:id',
+        name: 'subscription-order',
+        component: () => import('@/Pages/Subscriptions/Show.vue'),
+        meta: { title: 'Status Pesanan', requiresAuth: true },
+    },
+    {
+        path: '/langganan/riwayat',
+        name: 'subscription-history',
+        component: () => import('@/Pages/Subscriptions/History.vue'),
+        meta: { title: 'Riwayat Transaksi', requiresAuth: true },
+    },
+    {
         path: '/sertifikat',
         name: 'certificates',
         component: () => import('@/Pages/Certificates/Index.vue'),

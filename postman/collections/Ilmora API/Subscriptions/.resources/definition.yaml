@@ -1,0 +1,7 @@
+$kind: collection
+name: Subscriptions
+description: >-
+  Authenticated checkout flow: plan detail, order creation and validation, and
+  the signed-in user's own subscriptions and payments. Creates a pending order
+  that the Admin - Payments folder later verifies.
+order: 10500

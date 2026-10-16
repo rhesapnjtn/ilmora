@@ -1,0 +1,27 @@
+$kind: http-request
+name: Create Order (validation)
+method: POST
+url: '{{apiUrl}}/subscriptions'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "plan": "paket-tidak-ada",
+      "billing_cycle": "weekly"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('returns validation errors for plan and billing_cycle', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('errors');
+        pm.expect(json.errors).to.include.keys('plan', 'billing_cycle');
+      });

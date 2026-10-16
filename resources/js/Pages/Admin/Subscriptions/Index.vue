@@ -17,11 +17,11 @@ interface AdminSubscription {
     createdAt: string | null
 }
 interface Meta { page: number; perPage: number; total: number; lastPage: number }
-interface Summary { total: number; active: number; expired: number; canceled: number }
+interface Summary { total: number; pending: number; active: number; expired: number; canceled: number }
 
 const subscriptions = ref<AdminSubscription[]>([])
 const meta = ref<Meta>({ page: 1, perPage: 10, total: 0, lastPage: 1 })
-const summary = ref<Summary>({ total: 0, active: 0, expired: 0, canceled: 0 })
+const summary = ref<Summary>({ total: 0, pending: 0, active: 0, expired: 0, canceled: 0 })
 const filters = reactive({ search: '', status: '' })
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -70,10 +70,14 @@ onMounted(() => load(1))
 
 <template>
     <AdminLayout>
-        <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <div class="card">
                 <p class="text-label-md font-semibold uppercase tracking-wide text-on-surface-variant">Total Langganan</p>
                 <p class="mt-2 text-display-sm font-bold tracking-tight">{{ summary.total }}</p>
+            </div>
+            <div class="card">
+                <p class="text-label-md font-semibold uppercase tracking-wide text-secondary">Tertunda</p>
+                <p class="mt-2 text-display-sm font-bold tracking-tight">{{ summary.pending }}</p>
             </div>
             <div class="card">
                 <p class="text-label-md font-semibold uppercase tracking-wide text-tertiary">Aktif</p>

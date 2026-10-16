@@ -80,4 +80,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Payment::class);
     }
+
+    protected $appends = ['avatar_url'];
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar ? '/storage/'.$this->avatar : null;
+    }
 }

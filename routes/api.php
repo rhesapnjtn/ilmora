@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\AvatarController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -33,6 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+    Route::post('/profile/avatar', [AvatarController::class, 'store']);
 
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/password', [PasswordController::class, 'update'])->middleware('throttle:auth');

@@ -1,0 +1,9 @@
+$kind: collection
+name: Admin - Plans
+description: Plan CRUD. Creates a plan, exercises it, then deletes it.
+order: 10000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

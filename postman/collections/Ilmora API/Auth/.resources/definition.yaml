@@ -1,0 +1,4 @@
+$kind: collection
+name: Auth
+description: Registration, login and session lifecycle. Login requests capture the access tokens used everywhere else.
+order: 1000

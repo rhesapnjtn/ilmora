@@ -1,0 +1,37 @@
+$kind: http-request
+name: List Courses
+method: GET
+url: '{{apiUrl}}/admin/courses?page=1'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+queryParams:
+  - key: search
+    value: laravel
+    disabled: true
+    description: Matches title, slug or category name
+  - key: status
+    value: published
+    disabled: true
+    description: published | draft
+  - key: page
+    value: '1'
+    disabled: false
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has paginated course list', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('courses', 'meta', 'filters');
+        pm.expect(json.courses).to.be.an('array');
+        pm.expect(json.meta).to.include.keys('page', 'perPage', 'total', 'lastPage');
+      });
+      pm.test('courses expose admin summary fields', () => {
+        const json = pm.response.json();
+        json.courses.forEach((course) => {
+          pm.expect(course).to.include.keys('id', 'slug', 'title', 'price', 'lessonsCount', 'published');
+        });
+      });

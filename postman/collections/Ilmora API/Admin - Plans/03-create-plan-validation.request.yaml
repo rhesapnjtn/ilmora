@@ -1,0 +1,27 @@
+$kind: http-request
+name: Create Plan (validation error)
+method: POST
+url: '{{apiUrl}}/admin/plans'
+order: 3000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "highlighted": true
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('reports name, monthly and annual errors', () => {
+        const json = pm.response.json();
+        pm.expect(json.errors).to.have.property('name');
+        pm.expect(json.errors).to.have.property('monthly');
+        pm.expect(json.errors).to.have.property('annual');
+      });

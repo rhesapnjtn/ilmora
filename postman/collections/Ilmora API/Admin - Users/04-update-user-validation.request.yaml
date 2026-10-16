@@ -1,0 +1,25 @@
+$kind: http-request
+name: Update User (invalid role)
+method: PUT
+url: '{{apiUrl}}/admin/users/{{userId}}'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "role": "superadmin"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Entity', () => pm.response.to.have.status(422));
+      pm.test('reports role error', () => {
+        const json = pm.response.json();
+        pm.expect(json.errors).to.have.property('role');
+      });

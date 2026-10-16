@@ -1,0 +1,9 @@
+$kind: collection
+name: Admin - Dashboard
+description: Admin-only endpoints. Requests here authenticate with {{adminToken}}.
+order: 6000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

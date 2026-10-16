@@ -1,0 +1,6 @@
+$kind: collection
+name: Session
+description: >-
+  Logout endpoints. These run last on purpose because they revoke the access
+  token captured earlier in the run.
+order: 12000

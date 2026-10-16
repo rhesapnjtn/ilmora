@@ -1,0 +1,9 @@
+$kind: collection
+name: Admin - Users
+description: Admin user listing, detail and update.
+order: 9000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'

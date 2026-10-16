@@ -1,0 +1,20 @@
+$kind: http-request
+name: Course Detail
+method: GET
+url: '{{apiUrl}}/admin/courses/{{courseId}}'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      // courseId is captured by Admin - Courses > Create Course.
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns detailed course with lessons', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('course');
+        pm.expect(json.course).to.include.keys('id', 'slug', 'title', 'lessons', 'learn', 'includes');
+        pm.expect(json.course.lessons).to.be.an('array');
+      });

@@ -1,0 +1,18 @@
+$kind: http-request
+name: Certificate Detail
+method: GET
+url: '{{apiUrl}}/certificates/{{certificateId}}'
+order: 5000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has certificate detail', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('certificate');
+        pm.expect(json.certificate).to.include.keys('id', 'courseTitle', 'recipient');
+      });

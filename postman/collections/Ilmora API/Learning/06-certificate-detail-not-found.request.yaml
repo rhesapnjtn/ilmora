@@ -1,0 +1,16 @@
+$kind: http-request
+name: Certificate Detail (not found)
+method: GET
+url: '{{apiUrl}}/certificates/ilr-cert-does-not-exist'
+order: 6000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 404 Not Found', () => pm.response.to.have.status(404));
+      pm.test('response has message', () => {
+        pm.expect(pm.response.json()).to.have.property('message');
+      });

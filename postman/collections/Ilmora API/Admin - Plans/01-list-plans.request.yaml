@@ -1,0 +1,20 @@
+$kind: http-request
+name: List Plans
+method: GET
+url: '{{apiUrl}}/admin/plans'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has plans list', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('plans').that.is.an('array');
+        json.plans.forEach((plan) => {
+          pm.expect(plan).to.include.keys('id', 'name', 'slug', 'monthly', 'annual', 'isActive', 'features');
+        });
+      });

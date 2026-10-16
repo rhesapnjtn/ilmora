@@ -1,0 +1,42 @@
+$kind: http-request
+name: Create Course
+method: POST
+url: '{{apiUrl}}/admin/courses'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Kursus Uji Otomatis",
+      "slug": "kursus-uji-otomatis",
+      "summary": "Kursus contoh yang dibuat oleh koleksi Postman.",
+      "description": "Dibuat otomatis untuk menguji endpoint pembuatan kursus admin.",
+      "category": "pemrograman",
+      "category_name": "Pemrograman",
+      "level": "Pemula",
+      "price": 150000,
+      "accent": "primary",
+      "published": false,
+      "learn": ["Konsep dasar", "Praktik terbaik"],
+      "includes": ["Sertifikat", "Akses selamanya"]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns created course', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json).to.have.property('course');
+        pm.expect(json.course).to.include.keys('id', 'slug', 'title', 'published');
+      });
+      const json = pm.response.json();
+      if (json.course) {
+        pm.environment.set('courseId', String(json.course.id));
+      }

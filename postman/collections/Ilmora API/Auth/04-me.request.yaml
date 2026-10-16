@@ -1,0 +1,25 @@
+$kind: http-request
+name: Me
+method: GET
+url: '{{apiUrl}}/user'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('response has authenticated user', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('user');
+        pm.expect(json.user).to.include.keys('id', 'name', 'email', 'role');
+        pm.expect(json.user).to.not.have.property('password');
+      });
+      const json = pm.response.json();
+      if (json.user) {
+        pm.collectionVariables.set('currentUserName', json.user.name);
+        pm.collectionVariables.set('currentUserEmail', json.user.email);
+        pm.collectionVariables.set('currentUserId', json.user.id);
+      }

@@ -1,0 +1,44 @@
+$kind: http-request
+name: List Courses (filtered)
+method: GET
+url: '{{apiUrl}}/courses?search=laravel&page=1'
+order: 2000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+queryParams:
+  - key: search
+    value: laravel
+    disabled: false
+    description: Free-text match on title/summary/category name
+  - key: category
+    value: pemrograman
+    disabled: true
+    description: Category slug (pemrograman, desain, marketing, ...)
+  - key: level
+    value: Menengah
+    disabled: true
+    description: Pemula | Menengah | Lanjutan
+  - key: price
+    value: premium
+    disabled: true
+    description: free | premium
+  - key: rating
+    value: '4'
+    disabled: true
+    description: Minimum rating (0-5)
+  - key: page
+    value: '1'
+    disabled: false
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('filters are echoed back', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('filters');
+        pm.expect(json.filters).to.have.property('search');
+      });

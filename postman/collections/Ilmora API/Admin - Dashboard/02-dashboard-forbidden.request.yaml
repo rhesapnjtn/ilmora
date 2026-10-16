@@ -1,0 +1,22 @@
+$kind: http-request
+name: Admin Dashboard (forbidden for non-admin)
+method: GET
+url: '{{apiUrl}}/admin/dashboard'
+order: 2000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      // {{token}} belongs to the non-admin test user captured in Auth > Login.
+      pm.test('status is 403 Forbidden', () => pm.response.to.have.status(403));
+      pm.test('response has message', () => {
+        pm.expect(pm.response.json()).to.have.property('message');
+      });

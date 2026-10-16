@@ -1,0 +1,4 @@
+$kind: collection
+name: Learning
+description: Authenticated learning endpoints (dashboard, lessons, certificates) plus authorization checks.
+order: 4000

@@ -1,0 +1,38 @@
+$kind: http-request
+name: Create Lesson
+method: POST
+url: '{{apiUrl}}/admin/courses/{{courseId}}/lessons'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Pelajaran Uji Otomatis",
+      "module": "Modul Uji",
+      "duration": "10:00",
+      "description": "Pelajaran contoh dari koleksi Postman.",
+      "video_url": "https://example.com/video.mp4",
+      "is_free": true,
+      "materials": [
+        { "label": "Modul PDF", "size": "1.2 MB", "type": "pdf" }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns created lesson', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.lesson).to.include.keys('id', 'slug', 'title', 'order', 'isFree', 'materials');
+      });
+      const json = pm.response.json();
+      if (json.lesson) {
+        pm.environment.set('lessonId', String(json.lesson.id));
+      }

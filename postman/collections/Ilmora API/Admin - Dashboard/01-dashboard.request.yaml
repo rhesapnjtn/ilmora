@@ -1,0 +1,24 @@
+$kind: http-request
+name: Admin Dashboard
+method: GET
+url: '{{apiUrl}}/admin/dashboard'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('has overview stats', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('stats', 'recentUsers', 'recentPayments', 'subscriptionBreakdown');
+        pm.expect(json.stats).to.include.keys(
+          'users', 'admins', 'courses', 'publishedCourses',
+          'subscriptions', 'activeSubscriptions',
+          'payments', 'pendingPayments', 'revenue'
+        );
+        pm.expect(json.recentUsers).to.be.an('array');
+        pm.expect(json.subscriptionBreakdown).to.include.keys('active', 'expired', 'canceled');
+      });

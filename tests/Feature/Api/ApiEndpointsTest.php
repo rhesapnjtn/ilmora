@@ -51,6 +51,20 @@ class ApiEndpointsTest extends TestCase
             ->assertJsonStructure(['message']);
     }
 
+    public function test_course_detail_exposes_intro_video_url(): void
+    {
+        $this->getJson('/api/courses/laravel-vue-3-full-stack')
+            ->assertOk()
+            ->assertJsonPath('course.introVideoUrl', 'https://youtu.be/acxM3TvA4Qo?si=zCkJxp3kAFdBbiz5');
+    }
+
+    public function test_course_detail_intro_video_url_is_null_when_not_set(): void
+    {
+        $this->getJson('/api/courses/ui-ux-design-prototyping')
+            ->assertOk()
+            ->assertJsonPath('course.introVideoUrl', null);
+    }
+
     public function test_lesson_requires_authentication(): void
     {
         $this->getJson('/api/courses/laravel-vue-3-full-stack/lessons/2-1')->assertStatus(401);

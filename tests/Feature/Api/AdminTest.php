@@ -91,6 +91,55 @@ class AdminTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_set_intro_video_url_on_create_and_update(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $created = $this->withToken($admin->createToken('test')->plainTextToken)
+            ->postJson('/api/admin/courses', [
+                'title' => 'Kursus Dengan Intro Video',
+                'price' => 150000,
+                'intro_video_url' => 'https://www.youtube.com/watch?v=abc123xyz',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('course.introVideoUrl', 'https://www.youtube.com/watch?v=abc123xyz');
+
+        $courseId = $created->json('course.id');
+
+        $this->assertDatabaseHas('courses', [
+            'id' => $courseId,
+            'intro_video_url' => 'https://www.youtube.com/watch?v=abc123xyz',
+        ]);
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->putJson("/api/admin/courses/{$courseId}", [
+                'title' => 'Kursus Dengan Intro Video',
+                'price' => 150000,
+                'intro_video_url' => 'https://example.com/intro.mp4',
+            ])
+            ->assertOk()
+            ->assertJsonPath('course.introVideoUrl', 'https://example.com/intro.mp4');
+
+        $this->assertDatabaseHas('courses', [
+            'id' => $courseId,
+            'intro_video_url' => 'https://example.com/intro.mp4',
+        ]);
+    }
+
+    public function test_admin_cannot_set_invalid_intro_video_url(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->postJson('/api/admin/courses', [
+                'title' => 'Kursus Invalid Intro',
+                'price' => 150000,
+                'intro_video_url' => 'bukan-url',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('intro_video_url');
+    }
+
     public function test_admin_can_update_and_publish_a_course(): void
     {
         $admin = User::factory()->admin()->create();

@@ -3,7 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 import Badge from '@/Components/Badge.vue'
+import Modal from '@/Components/Modal.vue'
 import api from '@/lib/api'
+import { resolveVideo } from '@/lib/video'
 
 interface Lesson { id: string; title: string; duration: string; free: boolean }
 interface Module { title: string; lessons: Lesson[] }
@@ -25,6 +27,7 @@ interface Course {
     includes: { label: string; icon: string }[]
     curriculum: Module[]
     free: boolean
+    introVideoUrl: string | null
 }
 
 const route = useRoute()
@@ -34,6 +37,9 @@ const error = ref<string | null>(null)
 const notFound = ref(false)
 const activeTab = ref<'curriculum' | 'about'>('curriculum')
 const openModules = ref<number[]>([0])
+const introOpen = ref(false)
+
+const introVideo = computed(() => resolveVideo(course.value?.introVideoUrl))
 
 const firstLesson = computed(() => course.value?.curriculum[0]?.lessons[0]?.id ?? null)
 
@@ -142,12 +148,26 @@ watch(() => route.params.slug, loadCourse)
                         </div>
 
                         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-container shadow-modal">
-                            <div class="flex aspect-video items-center justify-center">
-                                <button type="button" class="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg transition-transform hover:scale-105" aria-label="Putar video pengenalan">
+                            <img
+                                v-if="course.thumbnail"
+                                :src="course.thumbnail"
+                                :alt="`Sampul ${course.title}`"
+                                class="aspect-video w-full object-cover"
+                            />
+                            <div v-else class="aspect-video w-full" />
+
+                            <button
+                                v-if="introVideo"
+                                type="button"
+                                class="absolute inset-0 flex items-center justify-center"
+                                aria-label="Putar video pengenalan"
+                                @click="introOpen = true"
+                            >
+                                <span class="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg transition-transform hover:scale-105">
                                     <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-                                </button>
-                            </div>
-                            <p class="absolute bottom-4 left-4 text-label-md font-medium text-white/90">Tonton video pengenalan (2 menit)</p>
+                                </span>
+                            </button>
+                            <p v-if="introVideo" class="absolute bottom-4 left-4 text-label-md font-medium text-white/90">Tonton video pengenalan (2 menit)</p>
                         </div>
                     </div>
                 </div>
@@ -241,6 +261,34 @@ watch(() => route.params.slug, loadCourse)
                     </aside>
                 </div>
             </section>
+
+            <Modal
+                v-if="course"
+                v-model="introOpen"
+                :title="course.title"
+                description="Video pengenalan kursus"
+                size="full"
+            >
+                <div class="relative overflow-hidden rounded-2xl bg-black">
+                    <iframe
+                        v-if="introVideo?.kind === 'embed'"
+                        :src="introVideo.src"
+                        class="aspect-video w-full"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        title="Video pengenalan kursus"
+                    />
+                    <video
+                        v-else-if="introVideo?.kind === 'file'"
+                        :src="introVideo.src"
+                        class="aspect-video w-full"
+                        controls
+                        autoplay
+                        preload="metadata"
+                    />
+                </div>
+            </Modal>
         </template>
     </GuestLayout>
 </template>

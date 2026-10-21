@@ -52,6 +52,7 @@ class DemoCatalog
                 'instructor' => ['name' => 'Ricky Pratama', 'role' => 'Senior Full Stack Engineer'],
                 'accent' => 'primary',
                 'popular' => true,
+                'introVideo' => 'https://youtu.be/acxM3TvA4Qo?si=zCkJxp3kAFdBbiz5',
                 'free' => false,
             ],
             [

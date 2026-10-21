@@ -163,6 +163,7 @@ class CourseController extends Controller
             'summary' => $course->summary,
             'description' => $course->description,
             'thumbnail' => $course->thumbnail,
+            'introVideoUrl' => $course->intro_video_url,
             'reviewCount' => $course->review_count,
             'durationHours' => $course->duration_hours,
             'instructorName' => $course->instructor_name,

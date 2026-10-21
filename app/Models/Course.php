@@ -35,6 +35,7 @@ class Course extends Model
         'accent',
         'popular',
         'is_free',
+        'intro_video_url',
         'published',
         'progress',
         'learn',

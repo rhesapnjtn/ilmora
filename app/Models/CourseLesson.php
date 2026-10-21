@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CourseLesson extends Model
 {
@@ -47,5 +48,15 @@ class CourseLesson extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * @return HasMany<LessonDiscussion, $this>
+     */
+    public function discussions(): HasMany
+    {
+        return $this->hasMany(LessonDiscussion::class, 'lesson_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 }

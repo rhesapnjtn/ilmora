@@ -1,0 +1,31 @@
+$kind: http-request
+name: Create Discussion
+method: POST
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "Bagaimana cara mengatasi error saat menjalankan migrasi?"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns the created discussion', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.discussion).to.include.keys('id', 'body', 'createdAt', 'user', 'canUpdate', 'canDelete');
+        pm.expect(json.discussion.user).to.include.keys('id', 'name', 'avatarUrl', 'role');
+      });
+      const json = pm.response.json();
+      if (json.discussion) {
+        pm.environment.set('discussionId', String(json.discussion.id));
+      }

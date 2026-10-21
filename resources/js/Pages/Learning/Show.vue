@@ -3,10 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import api from '@/lib/api'
+import { normalizeApiError } from '@/lib/errors'
 import { resolveVideo } from '@/lib/video'
 
 interface LessonItem { id: string; title: string; duration: string; module?: string }
 interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; materials: { label: string; size: string; type: string }[] }
+interface DiscussionUser { id: number; name: string; avatarUrl: string | null; role: 'user' | 'admin' }
+interface Discussion { id: number; body: string; createdAt: string; updatedAt: string; user: DiscussionUser; canUpdate: boolean; canDelete: boolean }
 interface Payload {
     course: { slug: string; title: string; level: string; lessonsCount: number; instructor: { name: string; role: string } }
     lesson: Lesson
@@ -23,6 +26,17 @@ const error = ref<string | null>(null)
 const notFound = ref(false)
 const activeTab = ref<'description' | 'notes' | 'discussion'>('description')
 const note = ref('')
+
+const discussions = ref<Discussion[]>([])
+const discussionsLoading = ref(false)
+const discussionsError = ref<string | null>(null)
+const discussionsLoaded = ref(false)
+const discussionDraft = ref('')
+const discussionSubmitting = ref(false)
+const discussionFormError = ref<string | null>(null)
+const editingDiscussionId = ref<number | null>(null)
+const editDraft = ref('')
+const editSaving = ref(false)
 
 const completedCount = computed(() => data.value?.lesson.index ?? 0)
 
@@ -45,7 +59,107 @@ async function load(): Promise<void> {
 }
 
 onMounted(load)
-watch(() => route.params.lesson, load)
+watch(() => route.params.lesson, async () => {
+    await load()
+
+    discussions.value = []
+    discussionsLoaded.value = false
+
+    if (activeTab.value === 'discussion') {
+        loadDiscussions()
+    }
+})
+watch(activeTab, (tab) => {
+    if (tab === 'discussion' && !discussionsLoaded.value) {
+        loadDiscussions()
+    }
+})
+
+function discussionUrl(): string {
+    return `/courses/${route.params.slug}/lessons/${route.params.lesson}/discussions`
+}
+
+function formatDateTime(value: string | null | undefined): string {
+    if (!value) {
+        return '-'
+    }
+
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
+async function loadDiscussions(): Promise<void> {
+    discussionsLoading.value = true
+    discussionsError.value = null
+
+    try {
+        const { data } = await api.get<{ discussions: Discussion[] }>(discussionUrl())
+        discussions.value = data.discussions
+        discussionsLoaded.value = true
+    } catch (err) {
+        discussionsError.value = normalizeApiError(err).message ?? 'Gagal memuat diskusi.'
+    } finally {
+        discussionsLoading.value = false
+    }
+}
+
+async function submitDiscussion(): Promise<void> {
+    const body = discussionDraft.value.trim()
+
+    if (!body) return
+
+    discussionSubmitting.value = true
+    discussionFormError.value = null
+
+    try {
+        const { data } = await api.post<{ discussion: Discussion }>(discussionUrl(), { body })
+        discussions.value = [data.discussion, ...discussions.value]
+        discussionDraft.value = ''
+    } catch (err) {
+        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal mengirim diskusi.'
+    } finally {
+        discussionSubmitting.value = false
+    }
+}
+
+function startEdit(discussion: Discussion): void {
+    editingDiscussionId.value = discussion.id
+    editDraft.value = discussion.body
+}
+
+function cancelEdit(): void {
+    editingDiscussionId.value = null
+    editDraft.value = ''
+}
+
+async function saveEdit(id: number): Promise<void> {
+    const body = editDraft.value.trim()
+
+    if (!body) return
+
+    editSaving.value = true
+    discussionFormError.value = null
+
+    try {
+        const { data } = await api.put<{ discussion: Discussion }>(`${discussionUrl()}/${id}`, { body })
+        discussions.value = discussions.value.map((item) => (item.id === id ? data.discussion : item))
+        editingDiscussionId.value = null
+    } catch (err) {
+        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal memperbarui diskusi.'
+    } finally {
+        editSaving.value = false
+    }
+}
+
+async function removeDiscussion(id: number): Promise<void> {
+    discussionFormError.value = null
+
+    try {
+        await api.delete(`${discussionUrl()}/${id}`)
+        discussions.value = discussions.value.filter((item) => item.id !== id)
+    } catch (err) {
+        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal menghapus diskusi.'
+    }
+}
 </script>
 
 <template>
@@ -162,8 +276,87 @@ watch(() => route.params.lesson, load)
                         />
                     </div>
 
-                    <div v-else class="mt-6 rounded-2xl border border-dashed border-outline px-6 py-12 text-center">
-                        <p class="text-body-md text-on-surface-variant">Belum ada diskusi pada pelajaran ini.</p>
+                    <div v-else class="mt-6">
+                        <div class="card">
+                            <label for="discussion-body" class="label">Tulis diskusi</label>
+                            <textarea
+                                id="discussion-body"
+                                v-model="discussionDraft"
+                                rows="3"
+                                maxlength="5000"
+                                class="mt-2 w-full rounded-2xl border border-outline bg-surface p-4 text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                placeholder="Ajukan pertanyaan atau bagikan pemahamanmu tentang pelajaran ini..."
+                            />
+                            <div class="mt-3 flex items-center justify-between gap-3">
+                                <span class="text-body-sm text-on-surface-variant">{{ discussionDraft.length }}/5000</span>
+                                <button type="button" class="btn-primary" :disabled="discussionSubmitting || !discussionDraft.trim()" @click="submitDiscussion">
+                                    {{ discussionSubmitting ? 'Mengirim...' : 'Kirim Diskusi' }}
+                                </button>
+                            </div>
+                            <p v-if="discussionFormError" class="mt-3 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ discussionFormError }}</p>
+                        </div>
+
+                        <div class="mt-6">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-title-md font-semibold">Diskusi</h2>
+                                <span class="text-body-sm text-on-surface-variant">{{ discussions.length }} pesan</span>
+                            </div>
+
+                            <div v-if="discussionsLoading" class="mt-4 space-y-3">
+                                <div v-for="n in 3" :key="n" class="h-24 animate-pulse rounded-2xl bg-surface-container-high" />
+                            </div>
+
+                            <p v-else-if="discussionsError" class="mt-4 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ discussionsError }}</p>
+
+                            <div v-else-if="discussions.length === 0" class="mt-4 rounded-2xl border border-dashed border-outline px-6 py-12 text-center">
+                                <p class="text-body-md text-on-surface-variant">Belum ada diskusi pada pelajaran ini. Jadilah yang pertama bertanya.</p>
+                            </div>
+
+                            <ul v-else class="mt-4 space-y-3">
+                                <li v-for="discussion in discussions" :key="discussion.id" class="card-flush">
+                                    <div class="flex items-start gap-3">
+                                        <img
+                                            v-if="discussion.user.avatarUrl"
+                                            :src="discussion.user.avatarUrl"
+                                            :alt="discussion.user.name"
+                                            class="h-10 w-10 shrink-0 rounded-full object-cover"
+                                        />
+                                        <span v-else class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-label-md font-bold text-primary">
+                                            {{ discussion.user.name.charAt(0) }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="text-body-md font-semibold text-on-surface">{{ discussion.user.name }}</span>
+                                                <span v-if="discussion.user.role === 'admin'" class="badge-primary">Pengajar</span>
+                                                <span class="text-body-sm text-on-surface-variant">{{ formatDateTime(discussion.createdAt) }}</span>
+                                            </div>
+
+                                            <template v-if="editingDiscussionId === discussion.id">
+                                                <textarea
+                                                    v-model="editDraft"
+                                                    rows="3"
+                                                    maxlength="5000"
+                                                    class="mt-2 w-full rounded-2xl border border-outline bg-surface p-3 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                                />
+                                                <div class="mt-2 flex justify-end gap-2">
+                                                    <button type="button" class="btn-secondary" @click="cancelEdit">Batal</button>
+                                                    <button type="button" class="btn-primary" :disabled="editSaving || !editDraft.trim()" @click="saveEdit(discussion.id)">
+                                                        {{ editSaving ? 'Menyimpan...' : 'Simpan' }}
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <p v-else class="mt-1 whitespace-pre-line text-body-md leading-relaxed text-on-surface-variant">{{ discussion.body }}</p>
+
+                                            <div v-if="editingDiscussionId !== discussion.id && (discussion.canUpdate || discussion.canDelete)" class="mt-3 flex items-center gap-4">
+                                                <button v-if="discussion.canUpdate" type="button" class="text-body-sm font-semibold text-primary transition-colors hover:text-primary/80" @click="startEdit(discussion)">Edit</button>
+                                                <button v-if="discussion.canDelete" type="button" class="text-body-sm font-semibold text-error transition-colors hover:text-error/80" @click="removeDiscussion(discussion.id)">Hapus</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 

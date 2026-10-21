@@ -1,0 +1,17 @@
+$kind: http-request
+name: List Discussions
+method: GET
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions'
+order: 1000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns a discussions list', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('discussions').that.is.an('array');
+      });

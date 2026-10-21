@@ -39,6 +39,9 @@ values:
   - key: lessonId
     value: ''
     description: Database id of a lesson (set by Admin Create Lesson)
+  - key: discussionId
+    value: ''
+    description: Database id of a discussion (set by Discussions Create Discussion)
   - key: planId
     value: ''
     description: Database id of a plan (set by Admin Create Plan)

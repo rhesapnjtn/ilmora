@@ -14,6 +14,7 @@ variables:
   planSlug: basic
   courseId: ""
   lessonId: ""
+  discussionId: ""
   planId: ""
   subscriptionId: ""
   paymentId: ""

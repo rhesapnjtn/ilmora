@@ -1,0 +1,17 @@
+$kind: http-request
+name: Delete Discussion
+method: DELETE
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions/{{discussionId}}'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('confirms the discussion was deleted', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+      });

@@ -1,0 +1,25 @@
+$kind: http-request
+name: Update Missing Discussion
+method: PUT
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions/999999'
+order: 6000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "Diskusi ini tidak ada."
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 404 Not Found', () => pm.response.to.have.status(404));
+      pm.test('returns a message', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+      });

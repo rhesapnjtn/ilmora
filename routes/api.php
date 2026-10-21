@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DiscussionController;
 use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\PaymentController;
@@ -43,6 +44,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', DashboardController::class);
 
     Route::get('/courses/{slug}/lessons/{lesson}', [LearningController::class, 'show']);
+
+    Route::get('/courses/{slug}/lessons/{lesson}/discussions', [DiscussionController::class, 'index']);
+    Route::post('/courses/{slug}/lessons/{lesson}/discussions', [DiscussionController::class, 'store']);
+    Route::put('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'update']);
+    Route::delete('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'destroy']);
 
     Route::get('/certificates', [CertificateController::class, 'index']);
     Route::get('/certificates/{id}', [CertificateController::class, 'show']);

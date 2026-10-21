@@ -1,0 +1,25 @@
+$kind: http-request
+name: Create Discussion Validation
+method: POST
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions'
+order: 5000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "   "
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 422 Unprocessable Content', () => pm.response.to.have.status(422));
+      pm.test('rejects an empty discussion body', () => {
+        const json = pm.response.json();
+        pm.expect(json.errors).to.have.property('body');
+      });

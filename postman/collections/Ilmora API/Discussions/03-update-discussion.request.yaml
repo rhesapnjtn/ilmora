@@ -1,0 +1,27 @@
+$kind: http-request
+name: Update Discussion
+method: PUT
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions/{{discussionId}}'
+order: 3000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "Pertanyaan yang sudah diperbarui."
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns the updated discussion', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.discussion).to.include.keys('id', 'body', 'canUpdate', 'canDelete');
+        pm.expect(json.discussion.body).to.equal('Pertanyaan yang sudah diperbarui.');
+      });

@@ -1,0 +1,28 @@
+$kind: http-request
+name: Create Reply
+method: POST
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions'
+order: 2500
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "Coba cek konfigurasi database kamu terlebih dahulu.",
+      "parent_id": "{{discussionId}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('returns the created reply', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.discussion).to.include.keys('id', 'body', 'user');
+        pm.expect(json.discussion.body).to.equal('Coba cek konfigurasi database kamu terlebih dahulu.');
+      });

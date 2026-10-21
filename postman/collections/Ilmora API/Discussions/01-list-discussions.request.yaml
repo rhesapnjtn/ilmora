@@ -14,4 +14,7 @@ scripts:
       pm.test('returns a discussions list', () => {
         const json = pm.response.json();
         pm.expect(json).to.have.property('discussions').that.is.an('array');
+        if (json.discussions.length) {
+          pm.expect(json.discussions[0]).to.have.property('replies').that.is.an('array');
+        }
       });

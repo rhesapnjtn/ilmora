@@ -217,4 +217,166 @@ class DiscussionTest extends TestCase
             ->assertJsonPath('discussions.0.id', $second->id)
             ->assertJsonPath('discussions.1.id', $first->id);
     }
+
+    public function test_user_can_reply_to_a_discussion(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan utama',
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON.'/discussions', [
+                'body' => 'Ini balasannya',
+                'parent_id' => $discussion->id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('discussion.body', 'Ini balasannya');
+
+        $this->assertDatabaseHas('lesson_discussions', [
+            'parent_id' => $discussion->id,
+            'body' => 'Ini balasannya',
+        ]);
+
+        $this->withToken($token)
+            ->getJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON.'/discussions')
+            ->assertOk()
+            ->assertJsonCount(1, 'discussions')
+            ->assertJsonCount(1, 'discussions.0.replies')
+            ->assertJsonPath('discussions.0.replies.0.body', 'Ini balasannya');
+    }
+
+    public function test_reply_body_is_required(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan utama',
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON.'/discussions', [
+                'body' => '   ',
+                'parent_id' => $discussion->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('body');
+    }
+
+    public function test_cannot_reply_to_a_reply(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan utama',
+        ]);
+
+        $reply = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'parent_id' => $discussion->id,
+            'body' => 'Balasan pertama',
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON.'/discussions', [
+                'body' => 'Coba balas balasan',
+                'parent_id' => $reply->id,
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_cannot_reply_to_a_discussion_from_another_lesson(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan pelajaran 2-1',
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/courses/'.self::COURSE.'/lessons/3-1/discussions', [
+                'body' => 'Balasan dari pelajaran lain',
+                'parent_id' => $discussion->id,
+            ])
+            ->assertStatus(404);
+    }
+
+    public function test_owner_can_edit_and_delete_a_reply(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan utama',
+        ]);
+
+        $reply = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'parent_id' => $discussion->id,
+            'body' => 'Balasan awal',
+        ]);
+
+        $this->withToken($token)
+            ->putJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON."/discussions/{$reply->id}", [
+                'body' => 'Balasan diperbarui',
+            ])
+            ->assertOk()
+            ->assertJsonPath('discussion.body', 'Balasan diperbarui');
+
+        $this->withToken($token)
+            ->deleteJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON."/discussions/{$reply->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('lesson_discussions', ['id' => $reply->id]);
+        $this->assertDatabaseHas('lesson_discussions', ['id' => $discussion->id]);
+    }
+
+    public function test_deleting_a_discussion_removes_its_replies(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+        $lesson = CourseLesson::query()->where('slug', self::LESSON)->firstOrFail();
+
+        $discussion = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'body' => 'Pertanyaan utama',
+        ]);
+
+        $reply = LessonDiscussion::create([
+            'lesson_id' => $lesson->id,
+            'user_id' => $user->id,
+            'parent_id' => $discussion->id,
+            'body' => 'Balasan',
+        ]);
+
+        $this->withToken($token)
+            ->deleteJson('/api/courses/'.self::COURSE.'/lessons/'.self::LESSON."/discussions/{$discussion->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('lesson_discussions', ['id' => $discussion->id]);
+        $this->assertDatabaseMissing('lesson_discussions', ['id' => $reply->id]);
+    }
 }

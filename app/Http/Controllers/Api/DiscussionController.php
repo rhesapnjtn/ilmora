@@ -25,9 +25,10 @@ class DiscussionController extends Controller
         }
 
         $discussions = $lessonModel->discussions()
-            ->with('user')
+            ->whereNull('parent_id')
+            ->with('user', 'replies.user')
             ->get()
-            ->map(fn (LessonDiscussion $discussion): array => $this->present($discussion, $request->user()))
+            ->map(fn (LessonDiscussion $discussion): array => $this->presentDiscussion($discussion, $request->user()))
             ->all();
 
         return response()->json(['discussions' => $discussions]);
@@ -41,14 +42,33 @@ class DiscussionController extends Controller
             return response()->json(['message' => 'Pelajaran tidak ditemukan.'], 404);
         }
 
+        $parent = null;
+
+        if ($request->filled('parent_id')) {
+            $parent = $lessonModel->discussions()->whereKey((int) $request->integer('parent_id'))->first();
+
+            if ($parent === null) {
+                return response()->json(['message' => 'Diskusi utama tidak ditemukan.'], 404);
+            }
+
+            if ($parent->parent_id !== null) {
+                return response()->json(['message' => 'Balasan hanya dapat ditujukan ke diskusi utama, bukan ke balasan lain.'], 422);
+            }
+        }
+
         $discussion = $lessonModel->discussions()->create([
             'user_id' => $request->user()->id,
             'body' => $request->string('body')->toString(),
+            'parent_id' => $parent?->id,
         ]);
 
+        $payload = $parent === null
+            ? $this->presentDiscussion($discussion->load('user', 'replies.user'), $request->user())
+            : $this->presentReply($discussion->load('user'), $request->user());
+
         return response()->json([
-            'message' => 'Diskusi berhasil ditambahkan.',
-            'discussion' => $this->present($discussion->load('user'), $request->user()),
+            'message' => $parent === null ? 'Diskusi berhasil ditambahkan.' : 'Balasan berhasil dikirim.',
+            'discussion' => $payload,
         ], 201);
     }
 
@@ -68,7 +88,7 @@ class DiscussionController extends Controller
 
         return response()->json([
             'message' => 'Diskusi berhasil diperbarui.',
-            'discussion' => $this->present($discussion->fresh()->load('user'), $request->user()),
+            'discussion' => $this->presentReply($discussion->fresh()->load('user'), $request->user()),
         ]);
     }
 
@@ -121,7 +141,22 @@ class DiscussionController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function present(LessonDiscussion $discussion, ?User $viewer): array
+    private function presentDiscussion(LessonDiscussion $discussion, ?User $viewer): array
+    {
+        return [
+            ...$this->presentReply($discussion, $viewer),
+            'replies' => $discussion->relationLoaded('replies')
+                ? $discussion->replies
+                    ->map(fn (LessonDiscussion $reply): array => $this->presentReply($reply, $viewer))
+                    ->all()
+                : [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentReply(LessonDiscussion $discussion, ?User $viewer): array
     {
         $user = $discussion->user;
         $canModerate = $viewer !== null

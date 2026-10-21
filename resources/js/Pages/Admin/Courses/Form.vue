@@ -54,6 +54,7 @@ const form = reactive({
     instructor_role: '',
     accent: 'primary',
     thumbnail: '',
+    intro_video_url: '',
     popular: false,
     is_free: false,
     published: false,
@@ -114,6 +115,7 @@ async function loadCourse(): Promise<void> {
             instructor_role: c.instructorRole ?? '',
             accent: c.accent ?? 'primary',
             thumbnail: c.thumbnail ?? '',
+            intro_video_url: c.introVideoUrl ?? '',
             popular: c.popular ?? false,
             is_free: c.isFree ?? false,
             published: c.published ?? false,
@@ -158,6 +160,7 @@ async function submit(): Promise<void> {
         instructor_role: form.instructor_role || null,
         accent: form.accent,
         thumbnail: form.thumbnail || null,
+        intro_video_url: form.intro_video_url || null,
         popular: form.popular,
         is_free: form.is_free,
         published: form.published,
@@ -340,6 +343,15 @@ onMounted(() => {
                         <label class="label" for="course-description">Deskripsi</label>
                         <textarea id="course-description" v-model="form.description" rows="5" class="input h-auto py-3" placeholder="Deskripsi lengkap kursus" />
                     </div>
+                    <Input
+                        v-model="form.intro_video_url"
+                        label="URL Video Pengenalan"
+                        :error="firstError('intro_video_url')"
+                        placeholder="https://youtube.com/watch?v=... atau link video .mp4"
+                    />
+                    <p class="-mt-2 text-body-sm text-on-surface-variant">
+                        Tampilkan tombol putar video pengenalan di halaman detail kursus. Kosongkan jika belum ada.
+                    </p>
                 </div>
 
                 <div class="card grid gap-4 sm:grid-cols-2">

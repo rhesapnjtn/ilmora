@@ -39,6 +39,7 @@ class CourseSeeder extends Seeder
                     'instructor_role' => $item['instructor']['role'],
                     'accent' => $item['accent'],
                     'popular' => $item['popular'],
+                    'intro_video_url' => $item['introVideo'] ?? null,
                     'is_free' => $item['free'],
                     'published' => true,
                     'learn' => $detail['learn'] ?? [],

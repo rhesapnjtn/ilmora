@@ -45,6 +45,7 @@ class StoreCourseRequest extends FormRequest
             'instructor_name' => ['nullable', 'string', 'max:255'],
             'instructor_role' => ['nullable', 'string', 'max:255'],
             'accent' => ['nullable', 'in:primary,secondary,tertiary'],
+            'intro_video_url' => ['nullable', 'url', 'max:2048'],
             'popular' => ['nullable', 'boolean'],
             'is_free' => ['nullable', 'boolean'],
             'published' => ['nullable', 'boolean'],

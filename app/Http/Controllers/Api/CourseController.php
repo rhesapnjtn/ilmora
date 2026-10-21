@@ -134,6 +134,7 @@ class CourseController extends Controller
         $data['includes'] = $includes;
         $data['curriculum'] = $curriculum;
         $data['lessonsTotal'] = $course->lessons->count();
+        $data['introVideoUrl'] = $course->intro_video_url;
 
         return $data;
     }

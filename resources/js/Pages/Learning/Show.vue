@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import api from '@/lib/api'
+import { resolveVideo } from '@/lib/video'
 
 interface LessonItem { id: string; title: string; duration: string; module?: string }
 interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; materials: { label: string; size: string; type: string }[] }
@@ -25,29 +26,7 @@ const note = ref('')
 
 const completedCount = computed(() => data.value?.lesson.index ?? 0)
 
-const video = computed<{ kind: 'embed' | 'file'; src: string } | null>(() => {
-    const url = data.value?.lesson.videoUrl
-
-    if (!url) {
-        return null
-    }
-
-    const youtube = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/)
-    if (youtube) {
-        return { kind: 'embed', src: `https://www.youtube.com/embed/${youtube[1]}` }
-    }
-
-    const vimeo = url.match(/vimeo\.com\/(\d+)/)
-    if (vimeo) {
-        return { kind: 'embed', src: `https://player.vimeo.com/video/${vimeo[1]}` }
-    }
-
-    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
-        return { kind: 'file', src: url }
-    }
-
-    return null
-})
+const video = computed(() => resolveVideo(data.value?.lesson.videoUrl))
 
 async function load(): Promise<void> {
     loading.value = true

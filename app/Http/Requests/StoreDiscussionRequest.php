@@ -20,6 +20,7 @@ class StoreDiscussionRequest extends FormRequest
     {
         return [
             'body' => ['required', 'string', 'min:1', 'max:5000'],
+            'parent_id' => ['nullable', 'integer', 'exists:lesson_discussions,id'],
         ];
     }
 

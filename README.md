@@ -30,7 +30,7 @@
 **Ilmora** adalah platform kursus dan pembelajaran digital yang dirancang untuk menghadirkan pengalaman belajar yang terstruktur, fleksibel, dan mudah diakses.
 
 Ilmora berfokus pada pengelolaan kursus, materi pembelajaran, progres siswa, serta akses premium melalui sistem langganan.
-
+ 
 ### 🎯 Visi
 
 Membangun ruang pembelajaran digital yang membantu setiap orang mengembangkan pengetahuan dan keterampilan secara berkelanjutan.

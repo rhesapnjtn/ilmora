@@ -26,3 +26,12 @@ scripts:
         pm.expect(json.discussion).to.include.keys('id', 'body', 'user');
         pm.expect(json.discussion.body).to.equal('Coba cek konfigurasi database kamu terlebih dahulu.');
       });
+      const json = pm.response.json();
+      if (json.discussion) {
+        pm.collectionVariables.set('replyId', String(json.discussion.id));
+        try {
+          pm.environment.set('replyId', String(json.discussion.id));
+        } catch (error) {
+          // No environment selected: the collection variable is enough.
+        }
+      }

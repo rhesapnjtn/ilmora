@@ -5,6 +5,7 @@ import { useAuth } from '@/stores/auth'
 import BottomNav from '@/Components/BottomNav.vue'
 import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Logo from '@/Components/Logo.vue'
+import NotificationBell from '@/Components/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -98,6 +99,8 @@ async function confirmLogout(): Promise<void> {
                         </svg>
                         Panel Admin
                     </RouterLink>
+                    <NotificationBell v-if="user" />
+
                     <RouterLink
                         v-if="user"
                         to="/profile"

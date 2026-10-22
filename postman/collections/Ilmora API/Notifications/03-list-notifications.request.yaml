@@ -1,0 +1,36 @@
+$kind: http-request
+name: List Notifications
+method: GET
+url: '{{apiUrl}}/notifications'
+order: 3000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('returns notifications and an unread counter', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.include.keys('notifications', 'unreadCount');
+        pm.expect(json.notifications).to.be.an('array');
+        pm.expect(json.unreadCount).to.be.a('number');
+        pm.collectionVariables.set('unreadCountBefore', String(json.unreadCount));
+      });
+      pm.test('contains a lesson reply notification', () => {
+        const json = pm.response.json();
+        const reply = json.notifications.find(function (item) {
+          return item.data && item.data.type === 'lesson_reply';
+        });
+        pm.expect(reply, 'expected a lesson_reply notification').to.exist;
+        if (reply) {
+          pm.expect(reply.data).to.include.keys('author_name', 'excerpt', 'lesson_title', 'url');
+          pm.collectionVariables.set('notificationId', String(reply.id));
+          try {
+            pm.environment.set('notificationId', String(reply.id));
+          } catch (error) {
+            // No environment selected: the collection variable is enough.
+          }
+        }
+      });

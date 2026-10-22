@@ -11,11 +11,17 @@ use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\LessonDiscussion;
 use App\Models\User;
+use App\Notifications\LessonReplyNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DiscussionController extends Controller
 {
+    private const DEFAULT_PER_PAGE = 10;
+
+    private const MAX_PER_PAGE = 50;
+
     public function index(Request $request, string $slug, string $lesson): JsonResponse
     {
         $lessonModel = $this->resolveLesson($slug, $lesson);
@@ -24,14 +30,26 @@ class DiscussionController extends Controller
             return response()->json(['message' => 'Pelajaran tidak ditemukan.'], 404);
         }
 
-        $discussions = $lessonModel->discussions()
+        $perPage = (int) $request->integer('per_page', self::DEFAULT_PER_PAGE);
+        $perPage = max(1, min($perPage, self::MAX_PER_PAGE));
+
+        $paginator = $lessonModel->discussions()
             ->whereNull('parent_id')
             ->with('user', 'replies.user')
-            ->get()
-            ->map(fn (LessonDiscussion $discussion): array => $this->presentDiscussion($discussion, $request->user()))
-            ->all();
+            ->paginate($perPage);
 
-        return response()->json(['discussions' => $discussions]);
+        return response()->json([
+            'discussions' => collect($paginator->items())
+                ->map(fn (LessonDiscussion $discussion): array => $this->presentDiscussion($discussion, $request->user()))
+                ->all(),
+            'meta' => [
+                'currentPage' => $paginator->currentPage(),
+                'lastPage' => $paginator->lastPage(),
+                'perPage' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'hasMore' => $paginator->hasMorePages(),
+            ],
+        ]);
     }
 
     public function store(StoreDiscussionRequest $request, string $slug, string $lesson): JsonResponse
@@ -61,6 +79,10 @@ class DiscussionController extends Controller
             'body' => $request->string('body')->toString(),
             'parent_id' => $parent?->id,
         ]);
+
+        if ($parent !== null && (int) $parent->user_id !== (int) $request->user()->id) {
+            $parent->user?->notify(new LessonReplyNotification($discussion, $parent));
+        }
 
         $payload = $parent === null
             ? $this->presentDiscussion($discussion->load('user', 'replies.user'), $request->user())
@@ -109,6 +131,72 @@ class DiscussionController extends Controller
         return response()->json(['message' => 'Diskusi berhasil dihapus.']);
     }
 
+    public function accept(Request $request, string $slug, string $lesson, LessonDiscussion $discussion): JsonResponse
+    {
+        $lessonModel = $this->resolveLesson($slug, $lesson);
+
+        if ($lessonModel === null || ! $this->belongsToLesson($discussion, $lessonModel)) {
+            return response()->json(['message' => 'Diskusi tidak ditemukan.'], 404);
+        }
+
+        if ($discussion->parent_id === null) {
+            return response()->json(['message' => 'Hanya balasan yang dapat ditandai sebagai jawaban terbaik.'], 422);
+        }
+
+        $parent = $discussion->parent()->first();
+
+        if ($parent === null || ! $this->belongsToLesson($parent, $lessonModel)) {
+            return response()->json(['message' => 'Diskusi tidak ditemukan.'], 404);
+        }
+
+        if (! $this->canModerate($request, $parent)) {
+            return response()->json(['message' => 'Anda tidak diizinkan menandai jawaban pada diskusi ini.'], 403);
+        }
+
+        DB::transaction(function () use ($parent, $discussion): void {
+            LessonDiscussion::query()
+                ->where('parent_id', $parent->id)
+                ->update(['is_answer' => false]);
+
+            $discussion->update(['is_answer' => true]);
+        });
+
+        return response()->json([
+            'message' => 'Jawaban terbaik berhasil ditandai.',
+            'discussion' => $this->presentReply($discussion->fresh()->load('user'), $request->user()),
+        ]);
+    }
+
+    public function unaccept(Request $request, string $slug, string $lesson, LessonDiscussion $discussion): JsonResponse
+    {
+        $lessonModel = $this->resolveLesson($slug, $lesson);
+
+        if ($lessonModel === null || ! $this->belongsToLesson($discussion, $lessonModel)) {
+            return response()->json(['message' => 'Diskusi tidak ditemukan.'], 404);
+        }
+
+        if ($discussion->parent_id === null) {
+            return response()->json(['message' => 'Hanya balasan yang dapat ditandai sebagai jawaban terbaik.'], 422);
+        }
+
+        $parent = $discussion->parent()->first();
+
+        if ($parent === null || ! $this->belongsToLesson($parent, $lessonModel)) {
+            return response()->json(['message' => 'Diskusi tidak ditemukan.'], 404);
+        }
+
+        if (! $this->canModerate($request, $parent)) {
+            return response()->json(['message' => 'Anda tidak diizinkan mengubah jawaban pada diskusi ini.'], 403);
+        }
+
+        $discussion->update(['is_answer' => false]);
+
+        return response()->json([
+            'message' => 'Tanda jawaban terbaik berhasil dibatalkan.',
+            'discussion' => $this->presentReply($discussion->fresh()->load('user'), $request->user()),
+        ]);
+    }
+
     private function resolveLesson(string $slug, string $lesson): ?CourseLesson
     {
         $course = Course::query()
@@ -143,8 +231,12 @@ class DiscussionController extends Controller
      */
     private function presentDiscussion(LessonDiscussion $discussion, ?User $viewer): array
     {
+        $hasAcceptedAnswer = $discussion->relationLoaded('replies')
+            && $discussion->replies->contains(fn (LessonDiscussion $reply): bool => (bool) $reply->is_answer);
+
         return [
             ...$this->presentReply($discussion, $viewer),
+            'hasAcceptedAnswer' => $hasAcceptedAnswer,
             'replies' => $discussion->relationLoaded('replies')
                 ? $discussion->replies
                     ->map(fn (LessonDiscussion $reply): array => $this->presentReply($reply, $viewer))
@@ -165,6 +257,7 @@ class DiscussionController extends Controller
         return [
             'id' => $discussion->id,
             'body' => $discussion->body,
+            'isAnswer' => (bool) $discussion->is_answer,
             'createdAt' => $discussion->created_at?->toIso8601String(),
             'updatedAt' => $discussion->updated_at?->toIso8601String(),
             'user' => [

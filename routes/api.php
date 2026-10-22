@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DiscussionController;
 use App\Http\Controllers\Api\LearningController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProfileController;
@@ -46,9 +47,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{slug}/lessons/{lesson}', [LearningController::class, 'show']);
 
     Route::get('/courses/{slug}/lessons/{lesson}/discussions', [DiscussionController::class, 'index']);
-    Route::post('/courses/{slug}/lessons/{lesson}/discussions', [DiscussionController::class, 'store']);
-    Route::put('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'update']);
-    Route::delete('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'destroy']);
+
+    Route::middleware('throttle:discussions')->group(function () {
+        Route::post('/courses/{slug}/lessons/{lesson}/discussions', [DiscussionController::class, 'store']);
+        Route::put('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'update']);
+        Route::delete('/courses/{slug}/lessons/{lesson}/discussions/{discussion}', [DiscussionController::class, 'destroy']);
+        Route::post('/courses/{slug}/lessons/{lesson}/discussions/{discussion}/accept', [DiscussionController::class, 'accept']);
+        Route::delete('/courses/{slug}/lessons/{lesson}/discussions/{discussion}/accept', [DiscussionController::class, 'unaccept']);
+    });
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
 
     Route::get('/certificates', [CertificateController::class, 'index']);
     Route::get('/certificates/{id}', [CertificateController::class, 'show']);

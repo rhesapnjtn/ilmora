@@ -1,6 +1,8 @@
 $kind: collection
 name: Discussions
 description: >-
-  Lesson discussion threads (list, create, update, delete) for the sample lesson.
-  Requires an authenticated {{token}}.
+  Lesson discussion threads for the sample lesson: paginated list, create, reply,
+  update, delete, and marking a reply as the best answer. Requests run in `order`,
+  so the best-answer requests (order 2600/2700) execute before the discussion is
+  deleted (order 4000). Requires an authenticated {{token}}.
 order: 4500

@@ -14,10 +14,6 @@ variables:
   planSlug: basic
   courseId: ""
   lessonId: ""
-  discussionId: ""
-  replyId: ""
-  notificationId: ""
-  notificationDiscussionId: ""
   planId: ""
   subscriptionId: ""
   paymentId: ""
@@ -30,6 +26,7 @@ variables:
   currentUserName: ""
   currentUserEmail: ""
   currentUserId: ""
+  unreadCountBefore: ""
 auth:
   type: bearer
   credentials:

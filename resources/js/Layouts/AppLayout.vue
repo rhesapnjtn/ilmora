@@ -6,6 +6,7 @@ import BottomNav from '@/Components/BottomNav.vue'
 import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Logo from '@/Components/Logo.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
+import UserAvatar from '@/Components/UserAvatar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -107,10 +108,7 @@ async function confirmLogout(): Promise<void> {
                         class="hidden rounded-xl p-2 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary sm:inline-flex"
                         aria-label="Profil"
                     >
-                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
+                        <UserAvatar :src="user.avatar_url" :name="user.name" size="md" />
                     </RouterLink>
 
                     <button

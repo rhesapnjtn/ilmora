@@ -21,7 +21,18 @@ class LessonDiscussion extends Model
         'user_id',
         'parent_id',
         'body',
+        'is_answer',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_answer' => 'boolean',
+        ];
+    }
 
     /**
      * @return BelongsTo<CourseLesson, $this>

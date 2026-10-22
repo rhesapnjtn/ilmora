@@ -1,0 +1,7 @@
+$kind: collection
+name: Notifications
+description: >-
+  In-app notifications for lesson discussion replies: list notifications with the
+  unread counter, mark a single notification as read, and mark all as read.
+  Requires an authenticated {{token}}.
+order: 4550

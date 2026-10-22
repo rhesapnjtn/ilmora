@@ -1,0 +1,19 @@
+$kind: http-request
+name: Unmark Best Answer
+method: DELETE
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions/{{replyId}}/accept'
+order: 2700
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('clears the best answer mark', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.discussion).to.include.keys('id', 'body', 'isAnswer');
+        pm.expect(json.discussion.isAnswer).to.equal(false);
+      });

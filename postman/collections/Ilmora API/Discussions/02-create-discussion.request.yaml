@@ -27,5 +27,10 @@ scripts:
       });
       const json = pm.response.json();
       if (json.discussion) {
-        pm.environment.set('discussionId', String(json.discussion.id));
+        pm.collectionVariables.set('discussionId', String(json.discussion.id));
+        try {
+          pm.environment.set('discussionId', String(json.discussion.id));
+        } catch (error) {
+          // No environment selected: the collection variable is enough.
+        }
       }

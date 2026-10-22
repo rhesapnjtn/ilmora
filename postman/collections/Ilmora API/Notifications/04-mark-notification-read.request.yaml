@@ -1,0 +1,20 @@
+$kind: http-request
+name: Mark Notification As Read
+method: POST
+url: '{{apiUrl}}/notifications/{{notificationId}}/read'
+order: 4000
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+      pm.test('unread counter decreases', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.unreadCount).to.be.a('number');
+        const before = Number(pm.collectionVariables.get('unreadCountBefore') || 0);
+        pm.expect(json.unreadCount).to.be.below(before);
+      });

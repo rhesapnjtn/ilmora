@@ -42,6 +42,15 @@ values:
   - key: discussionId
     value: ''
     description: Database id of a discussion (set by Discussions Create Discussion)
+  - key: replyId
+    value: ''
+    description: Database id of a reply (set by Discussions Create Reply)
+  - key: notificationId
+    value: ''
+    description: Database id of a notification (set by Notifications List Notifications)
+  - key: notificationDiscussionId
+    value: ''
+    description: Database id of the discussion used by the Notifications folder
   - key: planId
     value: ''
     description: Database id of a plan (set by Admin Create Plan)

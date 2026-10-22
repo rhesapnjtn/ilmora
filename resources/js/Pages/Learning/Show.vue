@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import api from '@/lib/api'
 import { normalizeApiError } from '@/lib/errors'
 import { resolveVideo } from '@/lib/video'
@@ -9,8 +10,9 @@ import { resolveVideo } from '@/lib/video'
 interface LessonItem { id: string; title: string; duration: string; module?: string }
 interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; materials: { label: string; size: string; type: string }[] }
 interface DiscussionUser { id: number; name: string; avatarUrl: string | null; role: 'user' | 'admin' }
-interface Reply { id: number; body: string; createdAt: string; updatedAt: string; user: DiscussionUser; canUpdate: boolean; canDelete: boolean }
-interface Discussion extends Reply { replies: Reply[] }
+interface Reply { id: number; body: string; isAnswer: boolean; createdAt: string; updatedAt: string; user: DiscussionUser; canUpdate: boolean; canDelete: boolean }
+interface Discussion extends Reply { hasAcceptedAnswer: boolean; replies: Reply[] }
+interface DiscussionMeta { currentPage: number; lastPage: number; perPage: number; total: number; hasMore: boolean }
 interface Payload {
     course: { slug: string; title: string; level: string; lessonsCount: number; instructor: { name: string; role: string } }
     lesson: Lesson
@@ -30,8 +32,14 @@ const note = ref('')
 
 const discussions = ref<Discussion[]>([])
 const discussionsLoading = ref(false)
+const discussionsLoadingMore = ref(false)
 const discussionsError = ref<string | null>(null)
 const discussionsLoaded = ref(false)
+const discussionsMeta = ref<DiscussionMeta>({ currentPage: 1, lastPage: 1, perPage: 10, total: 0, hasMore: false })
+const deleteTarget = ref<{ kind: 'discussion'; id: number } | { kind: 'reply'; parentId: number; id: number } | null>(null)
+const deleteError = ref<string | null>(null)
+const deleting = ref(false)
+const answerSavingId = ref<number | null>(null)
 const discussionDraft = ref('')
 const discussionSubmitting = ref(false)
 const discussionFormError = ref<string | null>(null)
@@ -65,12 +73,20 @@ async function load(): Promise<void> {
     }
 }
 
-onMounted(load)
+onMounted(async () => {
+    await load()
+
+    if (!notFound.value && route.query.tab === 'diskusi') {
+        activeTab.value = 'discussion'
+    }
+})
 watch(() => route.params.lesson, async () => {
     await load()
 
     discussions.value = []
     discussionsLoaded.value = false
+    discussionsMeta.value = { currentPage: 1, lastPage: 1, perPage: 10, total: 0, hasMore: false }
+    deleteTarget.value = null
     replyingToId.value = null
     replyEditingId.value = null
     editingDiscussionId.value = null
@@ -117,25 +133,41 @@ function formatRelative(value: string | null | undefined): string {
     return formatDateTime(value)
 }
 
-function isEdited(discussion: Discussion): boolean {
-    if (!discussion.createdAt || !discussion.updatedAt) return false
+function isEdited(item: { createdAt: string; updatedAt: string }): boolean {
+    if (!item.createdAt || !item.updatedAt) return false
 
-    return new Date(discussion.updatedAt).getTime() - new Date(discussion.createdAt).getTime() > 1000
+    return new Date(item.updatedAt).getTime() - new Date(item.createdAt).getTime() > 1000
 }
 
-async function loadDiscussions(): Promise<void> {
-    discussionsLoading.value = true
+async function loadDiscussions(page = 1, append = false): Promise<void> {
+    if (append) {
+        discussionsLoadingMore.value = true
+    } else {
+        discussionsLoading.value = true
+    }
+
     discussionsError.value = null
 
     try {
-        const { data } = await api.get<{ discussions: Discussion[] }>(discussionUrl())
-        discussions.value = data.discussions
+        const { data } = await api.get<{ discussions: Discussion[]; meta: DiscussionMeta }>(discussionUrl(), {
+            params: { page, per_page: 10 },
+        })
+
+        discussions.value = append ? [...discussions.value, ...data.discussions] : data.discussions
+        discussionsMeta.value = data.meta
         discussionsLoaded.value = true
     } catch (err) {
         discussionsError.value = normalizeApiError(err).message ?? 'Gagal memuat diskusi.'
     } finally {
         discussionsLoading.value = false
+        discussionsLoadingMore.value = false
     }
+}
+
+function loadMoreDiscussions(): void {
+    if (discussionsLoadingMore.value || !discussionsMeta.value.hasMore) return
+
+    loadDiscussions(discussionsMeta.value.currentPage + 1, true)
 }
 
 async function submitDiscussion(): Promise<void> {
@@ -149,6 +181,7 @@ async function submitDiscussion(): Promise<void> {
     try {
         const { data } = await api.post<{ discussion: Discussion }>(discussionUrl(), { body })
         discussions.value = [data.discussion, ...discussions.value]
+        discussionsMeta.value = { ...discussionsMeta.value, total: discussionsMeta.value.total + 1 }
         discussionDraft.value = ''
     } catch (err) {
         discussionFormError.value = normalizeApiError(err).message ?? 'Gagal mengirim diskusi.'
@@ -186,14 +219,18 @@ async function saveEdit(id: number): Promise<void> {
     }
 }
 
-async function removeDiscussion(id: number): Promise<void> {
-    discussionFormError.value = null
-
+async function removeDiscussion(id: number): Promise<string | null> {
     try {
         await api.delete(`${discussionUrl()}/${id}`)
         discussions.value = discussions.value.filter((item) => item.id !== id)
+        discussionsMeta.value = { ...discussionsMeta.value, total: Math.max(0, discussionsMeta.value.total - 1) }
+
+        return null
     } catch (err) {
-        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal menghapus diskusi.'
+        const message = normalizeApiError(err).message ?? 'Gagal menghapus diskusi.'
+        discussionFormError.value = message
+
+        return message
     }
 }
 
@@ -273,18 +310,85 @@ async function saveReplyEdit(parentId: number, replyId: number): Promise<void> {
     }
 }
 
-async function removeReply(parentId: number, replyId: number): Promise<void> {
-    discussionFormError.value = null
-
+async function removeReply(parentId: number, replyId: number): Promise<string | null> {
     try {
         await api.delete(`${discussionUrl()}/${replyId}`)
         const parent = discussions.value.find((item) => item.id === parentId)
 
         if (parent) {
             parent.replies = parent.replies.filter((item) => item.id !== replyId)
+            parent.hasAcceptedAnswer = parent.replies.some((item) => item.isAnswer)
         }
+
+        return null
     } catch (err) {
-        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal menghapus balasan.'
+        const message = normalizeApiError(err).message ?? 'Gagal menghapus balasan.'
+        discussionFormError.value = message
+
+        return message
+    }
+}
+
+function requestDeleteDiscussion(id: number): void {
+    deleteError.value = null
+    deleteTarget.value = { kind: 'discussion', id }
+}
+
+function requestDeleteReply(parentId: number, replyId: number): void {
+    deleteError.value = null
+    deleteTarget.value = { kind: 'reply', parentId, id: replyId }
+}
+
+async function confirmDelete(): Promise<void> {
+    const target = deleteTarget.value
+
+    if (!target) return
+
+    deleting.value = true
+    deleteError.value = null
+    discussionFormError.value = null
+
+    try {
+        const error = target.kind === 'discussion'
+            ? await removeDiscussion(target.id)
+            : await removeReply(target.parentId, target.id)
+
+        if (error === null) {
+            deleteTarget.value = null
+        } else {
+            deleteError.value = error
+        }
+    } finally {
+        deleting.value = false
+    }
+}
+
+async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void> {
+    answerSavingId.value = reply.id
+    discussionFormError.value = null
+
+    try {
+        const url = `${discussionUrl()}/${reply.id}/accept`
+
+        if (reply.isAnswer) {
+            await api.delete(url)
+        } else {
+            await api.post(url)
+        }
+
+        const parent = discussions.value.find((item) => item.id === discussion.id)
+
+        if (!parent) return
+
+        parent.replies = parent.replies.map((item) => ({
+            ...item,
+            isAnswer: reply.isAnswer ? false : item.id === reply.id,
+        }))
+        parent.hasAcceptedAnswer = parent.replies.some((item) => item.isAnswer)
+    } catch (err) {
+        discussionFormError.value = normalizeApiError(err).message ?? 'Gagal mengubah jawaban terbaik.'
+    } finally {
+        answerSavingId.value = null
     }
 }
 </script>
@@ -440,7 +544,7 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                         <section>
                             <div class="flex items-center justify-between gap-3">
                                 <h2 class="text-title-md font-semibold">Semua Diskusi</h2>
-                                <span class="badge-outline">{{ discussions.length }} diskusi</span>
+                                <span class="badge-outline">{{ discussionsMeta.total }} diskusi</span>
                             </div>
 
                             <div v-if="discussionsLoading" class="mt-4 space-y-4">
@@ -477,6 +581,7 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                                 <header class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                                     <span class="text-body-md font-semibold text-on-surface">{{ discussion.user.name }}</span>
                                                     <span v-if="discussion.user.role === 'admin'" class="badge-secondary">Pengajar</span>
+                                                    <span v-if="discussion.hasAcceptedAnswer" class="badge-success">Terjawab</span>
                                                     <span class="text-body-sm text-on-surface-variant" :title="formatDateTime(discussion.createdAt)">{{ formatRelative(discussion.createdAt) }}</span>
                                                     <span v-if="isEdited(discussion)" class="text-body-sm text-on-surface-variant">(diedit)</span>
                                                 </header>
@@ -506,7 +611,7 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                                         </svg>
                                                         Edit
                                                     </button>
-                                                    <button v-if="discussion.canDelete" type="button" class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-error transition-colors hover:text-error/80" @click="removeDiscussion(discussion.id)">
+                                                    <button v-if="discussion.canDelete" type="button" class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-error transition-colors hover:text-error/80" @click="requestDeleteDiscussion(discussion.id)">
                                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
                                                         </svg>
@@ -529,7 +634,12 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                         </p>
 
                                         <ul v-if="discussion.replies.length > 0" class="space-y-3">
-                                            <li v-for="reply in discussion.replies" :key="reply.id" class="card p-4">
+                                            <li
+                                                v-for="reply in discussion.replies"
+                                                :key="reply.id"
+                                                class="card p-4"
+                                                :class="reply.isAnswer ? 'ring-1 ring-tertiary/50' : ''"
+                                            >
                                                 <div class="flex items-start gap-3">
                                                     <img
                                                         v-if="reply.user.avatarUrl"
@@ -545,6 +655,7 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                                         <header class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                                             <span class="text-body-md font-semibold text-on-surface">{{ reply.user.name }}</span>
                                                             <span v-if="reply.user.role === 'admin'" class="badge-secondary">Pengajar</span>
+                                                            <span v-if="reply.isAnswer" class="badge-success">Jawaban terbaik</span>
                                                             <span class="text-body-sm text-on-surface-variant" :title="formatDateTime(reply.createdAt)">{{ formatRelative(reply.createdAt) }}</span>
                                                             <span v-if="isEdited(reply)" class="text-body-sm text-on-surface-variant">(diedit)</span>
                                                         </header>
@@ -567,18 +678,30 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                                         </template>
                                                         <p v-else class="mt-1 whitespace-pre-line text-body-md leading-relaxed text-on-surface-variant">{{ reply.body }}</p>
 
-                                                        <footer v-if="replyEditingId !== reply.id && (reply.canUpdate || reply.canDelete)" class="mt-3 flex items-center gap-4">
+                                                        <footer v-if="replyEditingId !== reply.id && (reply.canUpdate || reply.canDelete || discussion.canUpdate)" class="mt-3 flex flex-wrap items-center gap-4">
                                                             <button v-if="reply.canUpdate" type="button" class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary transition-colors hover:text-primary/80" @click="startReplyEdit(reply)">
                                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                                                 </svg>
                                                                 Edit
                                                             </button>
-                                                            <button v-if="reply.canDelete" type="button" class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-error transition-colors hover:text-error/80" @click="removeReply(discussion.id, reply.id)">
+                                                            <button v-if="reply.canDelete" type="button" class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-error transition-colors hover:text-error/80" @click="requestDeleteReply(discussion.id, reply.id)">
                                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                                     <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
                                                                 </svg>
                                                                 Hapus
+                                                            </button>
+                                                            <button
+                                                                v-if="discussion.canUpdate"
+                                                                type="button"
+                                                                class="inline-flex items-center gap-1.5 text-body-sm font-semibold text-tertiary transition-colors hover:text-tertiary/80 disabled:opacity-50"
+                                                                :disabled="answerSavingId === reply.id"
+                                                                @click="toggleAnswer(discussion, reply)"
+                                                            >
+                                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                                    <path d="M20 6 9 17l-5-5" />
+                                                                </svg>
+                                                                {{ reply.isAnswer ? 'Batalkan jawaban' : 'Tandai jawaban' }}
                                                             </button>
                                                         </footer>
                                                     </div>
@@ -606,6 +729,12 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                                     </div>
                                 </li>
                             </ol>
+
+                            <div v-if="!discussionsLoading && !discussionsError && discussionsMeta.hasMore" class="mt-6 flex justify-center">
+                                <button type="button" class="btn-secondary" :disabled="discussionsLoadingMore" @click="loadMoreDiscussions">
+                                    {{ discussionsLoadingMore ? 'Memuat...' : 'Muat Diskusi Lainnya' }}
+                                </button>
+                            </div>
                         </section>
                     </div>
                 </div>
@@ -661,5 +790,26 @@ async function removeReply(parentId: number, replyId: number): Promise<void> {
                 </div>
             </aside>
         </div>
+
+        <ConfirmDialog
+            :model-value="deleteTarget !== null"
+            :title="deleteTarget?.kind === 'reply' ? 'Hapus Balasan?' : 'Hapus Diskusi?'"
+            confirm-label="Hapus"
+            cancel-label="Batal"
+            variant="danger"
+            icon="trash"
+            :loading="deleting"
+            @update:model-value="deleteTarget = null"
+            @confirm="confirmDelete"
+        >
+            <p>
+                {{
+                    deleteTarget?.kind === 'reply'
+                        ? 'Balasan ini akan dihapus permanen dan tidak dapat dikembalikan.'
+                        : 'Diskusi ini beserta seluruh balasannya akan dihapus permanen dan tidak dapat dikembalikan.'
+                }}
+            </p>
+            <p v-if="deleteError" class="mt-2 text-body-sm text-error" role="alert">{{ deleteError }}</p>
+        </ConfirmDialog>
     </AppLayout>
 </template>

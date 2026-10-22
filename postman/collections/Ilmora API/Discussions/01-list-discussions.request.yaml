@@ -18,3 +18,11 @@ scripts:
           pm.expect(json.discussions[0]).to.have.property('replies').that.is.an('array');
         }
       });
+      pm.test('returns pagination meta', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('meta');
+        pm.expect(json.meta).to.include.keys('currentPage', 'lastPage', 'perPage', 'total', 'hasMore');
+        pm.expect(json.meta.currentPage).to.equal(1);
+        pm.expect(json.meta.perPage).to.be.a('number');
+        pm.expect(json.meta.total).to.be.at.least(json.discussions.length);
+      });

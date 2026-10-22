@@ -1,0 +1,31 @@
+$kind: http-request
+name: 'Reply as Admin (triggers notification)'
+method: POST
+url: '{{apiUrl}}/courses/{{courseSlug}}/lessons/{{lessonSlug}}/discussions'
+order: 2000
+auth:
+  type: bearer
+  credentials:
+    token: '{{adminToken}}'
+headers:
+  - key: Accept
+    value: application/json
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "body": "Balasan dari admin untuk memunculkan notifikasi.",
+      "parent_id": "{{notificationDiscussionId}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+      pm.test('reply is attached to the discussion owner', () => {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property('message');
+        pm.expect(json.discussion).to.include.keys('id', 'body', 'user');
+      });

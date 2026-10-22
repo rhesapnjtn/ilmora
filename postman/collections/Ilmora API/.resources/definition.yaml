@@ -9,7 +9,7 @@ variables:
   testUserPassword: Password123
   newPassword: Password1234
   courseSlug: laravel-vue-3-full-stack
-  lessonSlug: 2-1
+  lessonSlug: setup-project-laravel
   certificateId: ilr-cert-2026-001
   planSlug: basic
   courseId: ""
@@ -45,16 +45,82 @@ scripts:
         testUserPassword: 'Password123',
         newPassword: 'Password1234',
         courseSlug: 'laravel-vue-3-full-stack',
-        lessonSlug: '2-1',
+        lessonSlug: 'setup-project-laravel',
         certificateId: 'ilr-cert-2026-001',
         planSlug: 'basic',
       };
+
+      // pm.environment is undefined when no environment is selected.
+      function setEnvironment(key, value) {
+        try {
+          if (pm.environment && pm.environment.name) {
+            pm.environment.set(key, value);
+          }
+        } catch (error) {
+          // ignore: environment is optional.
+        }
+      }
+
       Object.keys(defaults).forEach(function (key) {
         if (!pm.variables.get(key)) {
           pm.collectionVariables.set(key, defaults[key]);
-          if (pm.environment.name) {
-            pm.environment.set(key, defaults[key]);
-          }
+          setEnvironment(key, defaults[key]);
         }
       });
+
+      // Keep lessonSlug in sync with the lessons that really exist in the local
+      // database: seeders may rename slugs (for example 2-1 -> setup-project-laravel),
+      // and a stale slug makes every lesson/discussion request fail with 404.
+      (async function resolveLessonSlug() {
+        try {
+          const courseSlug = pm.variables.get('courseSlug');
+          if (!courseSlug) {
+            return;
+          }
+
+          let slugs = [];
+          const cached = pm.collectionVariables.get('resolvedLessonSlugs');
+          if (pm.collectionVariables.get('resolvedCourseSlug') === courseSlug && cached) {
+            slugs = cached.split(',').filter(Boolean);
+          }
+
+          if (!slugs.length) {
+            const baseUrl = pm.variables.get('baseUrl');
+            const response = await pm.sendRequest({
+              url: baseUrl + '/api/courses/' + encodeURIComponent(courseSlug),
+              header: { Accept: 'application/json' },
+            });
+
+            if (response.code !== 200) {
+              return;
+            }
+
+            const body = response.json();
+            ((body.course && body.course.curriculum) || []).forEach(function (module) {
+              ((module && module.lessons) || []).forEach(function (lesson) {
+                if (lesson && lesson.id) {
+                  slugs.push(lesson.id);
+                }
+              });
+            });
+
+            if (!slugs.length) {
+              return;
+            }
+
+            pm.collectionVariables.set('resolvedCourseSlug', courseSlug);
+            pm.collectionVariables.set('resolvedLessonSlugs', slugs.join(','));
+          }
+
+          const current = pm.variables.get('lessonSlug');
+          const slug = slugs.indexOf(current) !== -1 ? current : slugs[0];
+
+          if (slug !== current) {
+            pm.collectionVariables.set('lessonSlug', slug);
+            setEnvironment('lessonSlug', slug);
+          }
+        } catch (error) {
+          // Never block the request: a missing lesson must surface as a test failure.
+        }
+      })();
     language: text/javascript

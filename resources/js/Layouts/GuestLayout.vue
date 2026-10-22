@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import BottomNav from '@/Components/BottomNav.vue'
 import Logo from '@/Components/Logo.vue'
+import UserAvatar from '@/Components/UserAvatar.vue'
 
 const { user } = useAuth()
 const route = useRoute()
@@ -93,12 +94,7 @@ function submitSearch(): void {
                             class="rounded-xl p-2 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary"
                             aria-label="Profil"
                         >
-                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                    <circle cx="12" cy="7" r="4" />
-                                </svg>
-                            </span>
+                            <UserAvatar :src="user.avatar_url" :name="user.name" size="sm" />
                         </RouterLink>
                     </template>
                     <template v-else>

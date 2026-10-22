@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import UserAvatar from '@/Components/UserAvatar.vue'
 
 const route = useRoute()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, user } = useAuth()
 
 const currentPath = computed(() => route.path)
 const profileHref = computed(() => (isAuthenticated.value ? '/profile' : '/masuk'))
@@ -64,7 +65,8 @@ function itemClass(active: boolean): string {
                 :class="itemClass(currentPath.startsWith('/profile'))"
                 :aria-current="currentPath.startsWith('/profile') ? 'page' : undefined"
             >
-                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <UserAvatar v-if="user" :src="user.avatar_url" :name="user.name" size="xs" variant="plain" />
+                <svg v-else class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                 </svg>

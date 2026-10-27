@@ -101,10 +101,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Atur Ulang Kata Sandi', guestOnly: true },
     },
     {
-        path: '/dashboard',
-        name: 'dashboard',
-        component: () => import('@/Pages/Dashboard/Index.vue'),
-        meta: { title: 'Dashboard', requiresAuth: true },
+        path: '/bantuan/chat',
+        name: 'support-chat',
+        component: () => import('@/Pages/Support/Chat.vue'),
+        meta: { title: 'Bantuan & Chat CS', requiresAuth: true },
     },
     {
         path: '/profile',
@@ -181,6 +181,12 @@ const routes: RouteRecordRaw[] = [
         name: 'admin-payments',
         component: () => import('@/Pages/Admin/Payments/Index.vue'),
         meta: { title: 'Kelola Pembayaran', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/chat',
+        name: 'admin-chat',
+        component: () => import('@/Pages/Admin/Chat/Index.vue'),
+        meta: { title: 'Chat Customer Service', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/admin/ulasan',

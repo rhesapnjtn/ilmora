@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Api\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
@@ -123,6 +124,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{slug}/redeem', [RedeemController::class, 'store']);
 
     Route::get('/payments', [PaymentController::class, 'index']);
+
+    Route::get('/chat/topics', [ChatController::class, 'topics']);
+    Route::get('/chat/conversations', [ChatController::class, 'index']);
+    Route::post('/chat/conversations', [ChatController::class, 'store']);
+    Route::get('/chat/conversations/{conversation}', [ChatController::class, 'show']);
+    Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
+    Route::get('/chat/conversations/{conversation}/poll', [ChatController::class, 'poll']);
+    Route::post('/chat/conversations/{conversation}/close', [ChatController::class, 'close']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
@@ -157,6 +166,12 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/plans/{plan}', [AdminPlanController::class, 'show']);
     Route::put('/plans/{plan}', [AdminPlanController::class, 'update']);
     Route::delete('/plans/{plan}', [AdminPlanController::class, 'destroy']);
+
+    Route::get('/chat/conversations', [AdminChatController::class, 'index']);
+    Route::get('/chat/conversations/{conversation}', [AdminChatController::class, 'show']);
+    Route::post('/chat/conversations/{conversation}/messages', [AdminChatController::class, 'sendMessage']);
+    Route::get('/chat/conversations/{conversation}/poll', [AdminChatController::class, 'poll']);
+    Route::post('/chat/conversations/{conversation}/close', [AdminChatController::class, 'close']);
 
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
     Route::get('/payments', [AdminPaymentController::class, 'index']);

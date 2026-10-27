@@ -143,6 +143,7 @@ const dashOffset = computed(() => {
 
 const sidebarNav = [
     { label: 'Kursus Saya', to: '/dashboard', icon: 'book' },
+    { label: 'Bantuan & Chat CS', to: '/bantuan/chat', icon: 'chat' },
     { label: 'Langganan', to: '/langganan', icon: 'spark' },
     { label: 'Riwayat Transaksi', to: '/langganan/riwayat', icon: 'history' },
     { label: 'Sertifikat', to: '/sertifikat', icon: 'award' },
@@ -192,6 +193,7 @@ onMounted(() => {
                     >
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <template v-if="item.icon === 'book'"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></template>
+                            <template v-else-if="item.icon === 'chat'"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></template>
                             <template v-else-if="item.icon === 'spark'"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z" /></template>
                             <template v-else-if="item.icon === 'award'"><circle cx="12" cy="8" r="5" /><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" /></template>
                             <template v-else><path d="M4 6h16M4 12h16M4 18h16" /><circle cx="9" cy="6" r="2" /><circle cx="15" cy="12" r="2" /><circle cx="8" cy="18" r="2" /></template>

@@ -101,6 +101,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Atur Ulang Kata Sandi', guestOnly: true },
     },
     {
+        path: '/dashboard',
+        name: 'dashboard',
+        component: () => import('@/Pages/Dashboard/Index.vue'),
+        meta: { title: 'Dashboard', requiresAuth: true },
+    },
+    {
         path: '/bantuan/chat',
         name: 'support-chat',
         component: () => import('@/Pages/Support/Chat.vue'),

@@ -44,7 +44,28 @@ async function load(): Promise<void> {
     }
 }
 
-onMounted(load)
+const downloading = ref(false)
+
+async function downloadPdf(): Promise<void> {
+    if (!certificate.value || downloading.value) return
+    downloading.value = true
+    try {
+        const response = await api.get(`/certificates/${certificate.value.id}/download`, { responseType: 'blob' })
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `sertifikat-${certificate.value.id}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+    } catch {
+        // ignore
+    } finally {
+        downloading.value = false
+    }
+}
 </script>
 
 <template>
@@ -93,7 +114,7 @@ onMounted(load)
 
             <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                 <RouterLink :to="`/kursus/${certificate.courseSlug}`" class="btn-secondary">Kembali ke Kursus</RouterLink>
-                <button type="button" class="btn-primary">Download</button>
+                <button type="button" class="btn-primary" :disabled="downloading" @click="downloadPdf">{{ downloading ? 'Mengunduh...' : 'Download' }}</button>
                 <button type="button" class="btn-secondary">Bagikan</button>
             </div>
         </div>

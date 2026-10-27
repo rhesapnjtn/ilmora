@@ -38,6 +38,8 @@ class StorePlanRequest extends FormRequest
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'features' => ['nullable', 'array'],
             'features.*' => ['string', 'max:500'],
+            'course_ids' => ['nullable', 'array'],
+            'course_ids.*' => ['integer', 'distinct', 'exists:courses,id'],
         ];
     }
 }

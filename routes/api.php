@@ -11,10 +11,12 @@ use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionCo
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
+use App\Http\Controllers\Api\CheckinController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseReviewController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DiscussionController;
+use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\LessonNoteController;
 use App\Http\Controllers\Api\NoteListController;
@@ -22,12 +24,15 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentWebhookController;
+use App\Http\Controllers\Api\PointsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QuizController;
+use App\Http\Controllers\Api\RedeemController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\AvatarController;
 use App\Models\Category;
+use App\Services\BadgeService;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -48,6 +53,10 @@ Route::get('/categories', function () {
 Route::get('/certificates/verify/{code}', [CertificateController::class, 'verify']);
 Route::get('/plans', [SubscriptionController::class, 'index']);
 Route::get('/plans/{slug}', [SubscriptionController::class, 'show']);
+Route::get('/leaderboard', [LeaderboardController::class, 'index']);
+Route::get('/badges', function () {
+    return response()->json(['badges' => BadgeService::catalog()]);
+});
 
 Route::post('/payments/webhook', [PaymentWebhookController::class, 'handle']);
 
@@ -108,6 +117,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'order']);
     Route::post('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
     Route::post('/subscriptions/{subscription}/resume', [SubscriptionController::class, 'resume']);
+
+    Route::get('/points', [PointsController::class, 'show']);
+    Route::post('/checkin', [CheckinController::class, 'store']);
+    Route::post('/courses/{slug}/redeem', [RedeemController::class, 'store']);
 
     Route::get('/payments', [PaymentController::class, 'index']);
 });

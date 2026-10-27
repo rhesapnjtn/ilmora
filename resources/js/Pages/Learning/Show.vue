@@ -29,7 +29,26 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const notFound = ref(false)
 const paywalled = ref(false)
-const paywallInfo = ref<{ courseSlug: string; courseTitle: string; lessonTitle: string } | null>(null)
+const paywallInfo = ref<{ courseSlug: string; courseTitle: string; lessonTitle: string; pointsCost: number | null } | null>(null)
+const redeeming = ref(false)
+const redeemError = ref<string | null>(null)
+
+async function redeemWithPoints(): Promise<void> {
+    if (!paywallInfo.value?.courseSlug || redeeming.value) {
+        return
+    }
+    redeeming.value = true
+    redeemError.value = null
+    try {
+        await api.post(`/courses/${encodeURIComponent(paywallInfo.value.courseSlug)}/redeem`)
+        window.location.reload()
+    } catch (err) {
+        const response = (err as { response?: { data?: { message?: string } } }).response
+        redeemError.value = response?.data?.message ?? 'Gagal menukar poin.'
+    } finally {
+        redeeming.value = false
+    }
+}
 const activeTab = ref<'description' | 'notes' | 'discussion'>('description')
 const note = ref('')
 const noteSaving = ref(false)
@@ -123,6 +142,7 @@ async function load(): Promise<void> {
                 courseSlug: e.response.data.course?.slug ?? String(route.params.slug),
                 courseTitle: e.response.data.course?.title ?? '',
                 lessonTitle: e.response.data.lesson?.title ?? '',
+                pointsCost: e.response.data.course?.pointsCost ?? null,
             }
         } else {
             error.value = 'Gagal memuat materi pelajaran.'
@@ -514,6 +534,16 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                 Lihat Paket Langganan
             </RouterLink>
+            <button
+                v-if="paywallInfo?.pointsCost"
+                type="button"
+                class="btn-secondary mt-3 inline-flex items-center gap-2"
+                :disabled="redeeming"
+                @click="redeemWithPoints"
+            >
+                {{ redeeming ? 'Memproses...' : `Tukar ${paywallInfo.pointsCost} poin untuk akses permanen` }}
+            </button>
+            <p v-if="redeemError" class="mt-3 text-body-sm text-error" role="alert">{{ redeemError }}</p>
             <RouterLink v-if="paywallInfo?.courseSlug" :to="`/kursus/${paywallInfo.courseSlug}`" class="btn-secondary mt-3">
                 Kembali ke Detail Kursus
             </RouterLink>

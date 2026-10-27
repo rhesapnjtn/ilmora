@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'current_streak',
+        'longest_streak',
+        'last_checkin_at',
     ];
 
     /**
@@ -49,6 +53,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'current_streak' => 'integer',
+            'longest_streak' => 'integer',
+            'last_checkin_at' => 'date',
         ];
     }
 
@@ -64,6 +71,35 @@ class User extends Authenticatable
             ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', now()->toDateString());
+            })
+            ->exists();
+    }
+
+    /**
+     * Determine whether the user may open the paid lessons of a course.
+     *
+     * Access is granted by an active subscription to a plan that includes this
+     * course, so a cheaper tier cannot open courses of a higher tier. A plan
+     * without courses grants nothing (deny by default).
+     */
+    public function hasAccessToCourse(Course $course): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->courseRedemptions()->where('course_id', $course->getKey())->exists()) {
+            return true;
+        }
+
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now()->toDateString());
+            })
+            ->whereHas('planRecord.courses', function (Builder $query) use ($course): void {
+                $query->whereKey($course->getKey());
             })
             ->exists();
     }
@@ -119,6 +155,16 @@ class User extends Authenticatable
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
+    public function courseRedemptions(): HasMany
+    {
+        return $this->hasMany(CourseRedemption::class);
     }
 
     /**

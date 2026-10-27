@@ -36,6 +36,7 @@ class Course extends Model
         'accent',
         'popular',
         'is_free',
+        'points_cost',
         'intro_video_url',
         'published',
         'progress',
@@ -57,6 +58,7 @@ class Course extends Model
             'progress' => 'integer',
             'popular' => 'boolean',
             'is_free' => 'boolean',
+            'points_cost' => 'integer',
             'published' => 'boolean',
             'learn' => 'array',
             'includes' => 'array',
@@ -103,6 +105,19 @@ class Course extends Model
     public function quizzes(): HasMany
     {
         return $this->hasMany(Quiz::class);
+    }
+
+    /**
+     * @return BelongsToMany<Plan, $this>
+     */
+    public function plans(): BelongsToMany
+    {
+        return $this->belongsToMany(Plan::class, 'plan_course')->withTimestamps();
+    }
+
+    public function redemptions(): HasMany
+    {
+        return $this->hasMany(CourseRedemption::class);
     }
 
     /**

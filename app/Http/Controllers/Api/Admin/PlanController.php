@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePlanRequest;
 use App\Http\Requests\Admin\UpdatePlanRequest;
+use App\Models\Course;
 use App\Models\Plan;
 use App\Models\Subscription;
 use Illuminate\Http\JsonResponse;
@@ -28,11 +29,18 @@ class PlanController extends Controller
 
     public function store(StorePlanRequest $request): JsonResponse
     {
-        $plan = Plan::create($this->normalize($request->validated()));
+        $data = $request->validated();
+        $courseIds = $this->extractCourseIds($data);
+
+        $plan = Plan::create($this->normalize($data));
+
+        if ($courseIds !== null) {
+            $plan->courses()->sync($courseIds);
+        }
 
         return response()->json([
             'message' => 'Paket berhasil dibuat.',
-            'plan' => $this->present($plan),
+            'plan' => $this->present($plan->fresh()),
         ], 201);
     }
 
@@ -43,7 +51,15 @@ class PlanController extends Controller
 
     public function update(UpdatePlanRequest $request, Plan $plan): JsonResponse
     {
-        $plan->update($this->normalize($request->validated(), $plan));
+        $data = $request->validated();
+        $hasCourseIds = array_key_exists('course_ids', $data);
+        $courseIds = $this->extractCourseIds($data);
+
+        $plan->update($this->normalize($data, $plan));
+
+        if ($hasCourseIds) {
+            $plan->courses()->sync($courseIds ?? []);
+        }
 
         return response()->json([
             'message' => 'Paket berhasil diperbarui.',
@@ -67,6 +83,22 @@ class PlanController extends Controller
         $plan->delete();
 
         return response()->json(['message' => 'Paket berhasil dihapus.']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<int>|null
+     */
+    private function extractCourseIds(array &$data): ?array
+    {
+        if (! array_key_exists('course_ids', $data)) {
+            return null;
+        }
+
+        $courseIds = $data['course_ids'] ?? [];
+        unset($data['course_ids']);
+
+        return array_values(array_map('intval', is_array($courseIds) ? $courseIds : []));
     }
 
     /**
@@ -97,6 +129,8 @@ class PlanController extends Controller
      */
     private function present(Plan $plan): array
     {
+        $plan->loadMissing('courses');
+
         return [
             'id' => $plan->id,
             'name' => $plan->name,
@@ -107,6 +141,17 @@ class PlanController extends Controller
             'features' => $plan->features ?? [],
             'isActive' => (bool) $plan->is_active,
             'sortOrder' => (int) $plan->sort_order,
+            'courseIds' => $plan->courses->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            'courses' => $plan->courses
+                ->sortBy('title')
+                ->map(fn (Course $course): array => [
+                    'id' => $course->id,
+                    'slug' => $course->slug,
+                    'title' => $course->title,
+                    'level' => $course->level,
+                ])
+                ->values()
+                ->all(),
             'createdAt' => $plan->created_at?->toIso8601String(),
         ];
     }

@@ -15,5 +15,5 @@ scripts:
       pm.test('returns plan detail', () => {
         const json = pm.response.json();
         pm.expect(json).to.have.property('plan');
-        pm.expect(json.plan).to.include.keys('id', 'slug', 'name', 'monthly', 'annual', 'features');
+        pm.expect(json.plan).to.include.keys('id', 'slug', 'name', 'monthly', 'annual', 'features', 'courseIds');
       });

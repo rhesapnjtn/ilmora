@@ -6,6 +6,13 @@ import Button from '@/Components/Button.vue'
 import api from '@/lib/api'
 import { normalizeApiError } from '@/lib/errors'
 
+interface PlanCourse {
+    slug: string
+    title: string
+    level: string
+    lessonsCount: number
+}
+
 interface Plan {
     id: string
     name: string
@@ -13,6 +20,7 @@ interface Plan {
     annual: number
     highlighted: boolean
     features: string[]
+    courses: PlanCourse[]
 }
 
 const route = useRoute()
@@ -157,6 +165,23 @@ onMounted(loadPlan)
                                 <span>{{ feature }}</span>
                             </li>
                         </ul>
+                    </div>
+
+                    <div class="card">
+                        <h2 class="text-title-lg font-semibold">Kursus yang Kamu Dapat</h2>
+                        <p class="mt-1 text-body-sm text-on-surface-variant">
+                            Paket ini membuka akses penuh ke {{ plan.courses.length }} kursus berikut.
+                        </p>
+                        <ul v-if="plan.courses.length" class="mt-4 space-y-2">
+                            <li v-for="course in plan.courses" :key="course.slug" class="flex items-start gap-3 text-body-md text-on-surface-variant">
+                                <svg class="mt-0.5 h-5 w-5 shrink-0 text-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                                <span class="flex-1">{{ course.title }}</span>
+                                <span class="shrink-0 text-label-sm text-on-surface-variant">{{ course.level }} · {{ course.lessonsCount }} lesson</span>
+                            </li>
+                        </ul>
+                        <p v-else class="mt-3 text-body-sm text-on-surface-variant">
+                            Paket ini belum memiliki kursus yang ditautkan. Hubungi admin untuk menambahkan.
+                        </p>
                     </div>
 
                     <div class="card">

@@ -9,6 +9,8 @@ use App\Mail\CertificateMail;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseLesson;
+use App\Services\BadgeService;
+use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +18,11 @@ use Illuminate\Support\Str;
 
 class LearningController extends Controller
 {
+    public function __construct(
+        private readonly PointsService $points,
+        private readonly BadgeService $badges,
+    ) {}
+
     public function show(Request $request, string $slug, string $lesson): JsonResponse
     {
         $course = Course::query()
@@ -40,15 +47,21 @@ class LearningController extends Controller
         $user = $request->user();
 
         $isFree = (bool) $current->is_free;
-        $hasAccess = $isFree || ($user !== null && ($user->isAdmin() || $user->hasActiveSubscription()));
+        $hasAccess = $isFree || ($user !== null && $user->hasAccessToCourse($course));
 
         if (! $hasAccess) {
+            $hasActiveSubscription = $user !== null && $user->hasActiveSubscription();
+
             return response()->json([
-                'message' => 'Materi ini memerlukan langganan aktif. Silakan pilih paket langganan untuk melanjutkan.',
+                'message' => $hasActiveSubscription
+                    ? 'Kursus ini tidak termasuk dalam paket langgananmu. Silakan upgrade paket untuk melanjutkan.'
+                    : 'Materi ini memerlukan langganan aktif. Silakan pilih paket langganan untuk melanjutkan.',
                 'requires_subscription' => true,
+                'requires_upgrade' => $hasActiveSubscription,
                 'course' => [
                     'slug' => $course->slug,
                     'title' => $course->title,
+                    'pointsCost' => $course->points_cost,
                 ],
                 'lesson' => [
                     'id' => $current->slug,
@@ -145,12 +158,17 @@ class LearningController extends Controller
         }
 
         $isFree = (bool) $currentLesson->is_free;
-        $hasAccess = $isFree || $user->isAdmin() || $user->hasActiveSubscription();
+        $hasAccess = $isFree || $user->hasAccessToCourse($course);
 
         if (! $hasAccess) {
+            $hasActiveSubscription = $user->hasActiveSubscription();
+
             return response()->json([
-                'message' => 'Materi ini memerlukan langganan aktif.',
+                'message' => $hasActiveSubscription
+                    ? 'Kursus ini tidak termasuk dalam paket langgananmu. Silakan upgrade paket untuk melanjutkan.'
+                    : 'Materi ini memerlukan langganan aktif.',
                 'requires_subscription' => true,
+                'requires_upgrade' => $hasActiveSubscription,
             ], 403);
         }
 
@@ -191,6 +209,29 @@ class LearningController extends Controller
 
         if ($progress === 100) {
             $this->issueCertificate($user->id, $course->id);
+        }
+
+        if ($isCompleted) {
+            $this->points->award(
+                $user,
+                'lesson_complete',
+                PointsService::LESSON_COMPLETE,
+                'course_lesson',
+                (int) $currentLesson->id,
+                'Menyelesaikan lesson: '.$currentLesson->title,
+            );
+
+            if ($progress === 100) {
+                $this->points->award(
+                    $user,
+                    'course_complete',
+                    PointsService::COURSE_COMPLETE,
+                    'course',
+                    (int) $course->id,
+                    'Menyelesaikan kursus: '.$course->title,
+                );
+                $this->badges->evaluate($user->fresh());
+            }
         }
 
         return response()->json([

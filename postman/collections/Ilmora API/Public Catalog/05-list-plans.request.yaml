@@ -21,6 +21,7 @@ scripts:
       pm.test('plans expose pricing and features', () => {
         const json = pm.response.json();
         json.plans.forEach((plan) => {
-          pm.expect(plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features');
+          pm.expect(plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features', 'courses');
+          pm.expect(plan.courses).to.be.an('array');
         });
       });

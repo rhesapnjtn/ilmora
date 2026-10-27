@@ -43,6 +43,7 @@ class CourseSeeder extends Seeder
                     'popular' => $item['popular'],
                     'intro_video_url' => $item['introVideo'] ?? null,
                     'is_free' => $item['free'],
+                    'points_cost' => $item['free'] ? null : max(200, (int) round($item['price'] / 1000)),
                     'published' => true,
                     'learn' => $detail['learn'] ?? [],
                     'includes' => collect($detail['includes'] ?? [])

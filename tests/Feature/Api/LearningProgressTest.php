@@ -71,6 +71,7 @@ class LearningProgressTest extends TestCase
             'expires_at' => Carbon::now()->addMonth(),
         ]);
         $course = Course::factory()->create(['published' => true]);
+        $plan->courses()->attach($course->id);
         CourseLesson::factory()->create([
             'course_id' => $course->id,
             'is_free' => false,
@@ -95,6 +96,7 @@ class LearningProgressTest extends TestCase
             'expires_at' => Carbon::now()->subDay(),
         ]);
         $course = Course::factory()->create(['published' => true]);
+        $plan->courses()->attach($course->id);
         CourseLesson::factory()->create([
             'course_id' => $course->id,
             'is_free' => false,
@@ -187,6 +189,7 @@ class LearningProgressTest extends TestCase
             'expires_at' => Carbon::now()->addMonth(),
         ]);
         $course = Course::factory()->create(['published' => true]);
+        $plan->courses()->attach($course->id);
         CourseLesson::factory()->create([
             'course_id' => $course->id,
             'is_free' => false,
@@ -215,6 +218,7 @@ class LearningProgressTest extends TestCase
             'expires_at' => Carbon::now()->addMonth(),
         ]);
         $course = Course::factory()->create(['published' => true]);
+        $plan->courses()->attach($course->id);
         CourseLesson::factory()->create([
             'course_id' => $course->id,
             'is_free' => false,
@@ -260,6 +264,7 @@ class LearningProgressTest extends TestCase
             'expires_at' => Carbon::now()->addMonth(),
         ]);
         $course = Course::factory()->create(['published' => true]);
+        $plan->courses()->attach($course->id);
         CourseLesson::factory()->create([
             'course_id' => $course->id,
             'is_free' => false,

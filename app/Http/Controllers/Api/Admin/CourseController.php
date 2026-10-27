@@ -19,6 +19,8 @@ class CourseController extends Controller
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
 
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+
         $courses = Course::query()
             ->withCount('lessons')
             ->when($search !== '', function ($query) use ($search): void {
@@ -31,7 +33,7 @@ class CourseController extends Controller
             ->when($status === 'published', fn ($query) => $query->where('published', true))
             ->when($status === 'draft', fn ($query) => $query->where('published', false))
             ->latest()
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         return response()->json([

@@ -20,6 +20,7 @@ interface Lesson {
     videoUrl: string | null
     order: number
     isFree: boolean
+    isPreview: boolean
 }
 
 const route = useRoute()
@@ -65,7 +66,7 @@ const form = reactive({
 const lessonModalOpen = ref(false)
 const editingLesson = ref<Lesson | null>(null)
 const lessonSaving = ref(false)
-const lessonForm = reactive({ title: '', module: '', duration: '', video_url: '', order: 0, is_free: false })
+const lessonForm = reactive({ title: '', module: '', duration: '', video_url: '', order: 0, is_free: false, is_preview: false })
 const videoFile = ref<File | null>(null)
 const videoUploading = ref(false)
 const videoRemoving = ref(false)
@@ -118,6 +119,7 @@ async function loadCourse(): Promise<void> {
             intro_video_url: c.introVideoUrl ?? '',
             popular: c.popular ?? false,
             is_free: c.isFree ?? false,
+    is_preview: c.isPreview ?? false,
             published: c.published ?? false,
             learnText: (c.learn ?? []).join('\n'),
             includesText: (c.includes ?? []).join('\n'),
@@ -198,6 +200,7 @@ function openLessonModal(lesson?: Lesson): void {
     lessonForm.video_url = lesson?.videoUrl ?? ''
     lessonForm.order = lesson?.order ?? lessons.value.length + 1
     lessonForm.is_free = lesson?.isFree ?? false
+    lessonForm.is_preview = lesson?.isPreview ?? false
     lessonModalOpen.value = true
 }
 
@@ -500,7 +503,11 @@ onMounted(() => {
                 </div>
                 <label class="flex items-center gap-3 text-body-md">
                     <input v-model="lessonForm.is_free" type="checkbox" class="h-5 w-5 rounded text-primary" />
-                    Jadikan pelajaran pratinjau gratis
+                    Jadikan pelajaran gratis (akses tanpa langganan)
+                </label>
+                <label class="flex items-center gap-3 text-body-md">
+                    <input v-model="lessonForm.is_preview" type="checkbox" class="h-5 w-5 rounded text-primary" />
+                    Jadikan pelajaran preview (tampil di katalog)
                 </label>
             </div>
             <template #footer>

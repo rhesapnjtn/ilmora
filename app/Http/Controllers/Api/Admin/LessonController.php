@@ -111,6 +111,7 @@ class LessonController extends Controller
 
         $data['order'] = $data['order'] ?? $lesson?->order ?? $course->lessons()->max('order') + 1;
         $data['is_free'] = (bool) ($data['is_free'] ?? $lesson?->is_free ?? false);
+        $data['is_preview'] = (bool) ($data['is_preview'] ?? $lesson?->is_preview ?? false);
 
         if (array_key_exists('materials', $data)) {
             $data['materials'] = array_values((array) $data['materials']);
@@ -135,6 +136,7 @@ class LessonController extends Controller
             'videoUrl' => $lesson->video_url,
             'order' => $lesson->order,
             'isFree' => (bool) $lesson->is_free,
+            'isPreview' => (bool) $lesson->is_preview,
             'materials' => $lesson->materials ?? [],
         ];
     }

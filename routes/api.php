@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionCo
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CheckinController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseReviewController;

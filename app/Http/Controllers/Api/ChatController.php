@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
-    public static function topics(): array
+    public static function availableTopics(): array
     {
         return [
             ['code' => 'payment', 'label' => 'Masalah Pembayaran'],

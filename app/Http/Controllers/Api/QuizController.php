@@ -7,13 +7,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\QuizAttempt;
+use App\Services\BadgeService;
 use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
-    public function __construct(private readonly PointsService $points) {}
+    public function __construct(
+        private readonly PointsService $points,
+        private readonly BadgeService $badges,
+    ) {}
 
     public function show(Request $request, string $slug): JsonResponse
     {
@@ -81,6 +85,7 @@ class QuizController extends Controller
                 (int) $quiz->id,
                 'Lulus quiz: '.$course->title,
             );
+            $this->badges->evaluate($user->fresh());
         }
 
         return response()->json([

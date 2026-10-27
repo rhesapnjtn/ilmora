@@ -9,6 +9,7 @@ use App\Mail\CertificateMail;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseLesson;
+use App\Services\BadgeService;
 use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,10 @@ use Illuminate\Support\Str;
 
 class LearningController extends Controller
 {
-    public function __construct(private readonly PointsService $points) {}
+    public function __construct(
+        private readonly PointsService $points,
+        private readonly BadgeService $badges,
+    ) {}
 
     public function show(Request $request, string $slug, string $lesson): JsonResponse
     {
@@ -226,6 +230,7 @@ class LearningController extends Controller
                     (int) $course->id,
                     'Menyelesaikan kursus: '.$course->title,
                 );
+                $this->badges->evaluate($user->fresh());
             }
         }
 

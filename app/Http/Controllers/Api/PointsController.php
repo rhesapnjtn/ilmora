@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BadgeService;
 use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PointsController extends Controller
 {
-    public function __construct(private readonly PointsService $points) {}
+    public function __construct(
+        private readonly PointsService $points,
+        private readonly BadgeService $badges,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -40,6 +44,7 @@ class PointsController extends Controller
             'longestStreak' => (int) $user->longest_streak,
             'lastCheckinAt' => $user->last_checkin_at?->toDateString(),
             'transactions' => $transactions,
+            'badges' => $this->badges->forUser($user),
         ]);
     }
 }

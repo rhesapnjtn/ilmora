@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BadgeService;
 use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CheckinController extends Controller
 {
-    public function __construct(private readonly PointsService $points) {}
+    public function __construct(
+        private readonly PointsService $points,
+        private readonly BadgeService $badges,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -22,6 +26,7 @@ class CheckinController extends Controller
         }
 
         $result = $this->points->checkin($user);
+        $newBadges = $this->badges->evaluate($user->fresh());
 
         return response()->json([
             'message' => $result['already_checked_in']
@@ -31,6 +36,7 @@ class CheckinController extends Controller
             'streak' => $result['streak'],
             'alreadyCheckedIn' => $result['already_checked_in'],
             'balance' => $result['balance'],
+            'newBadges' => $newBadges,
         ]);
     }
 }

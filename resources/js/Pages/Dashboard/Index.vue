@@ -50,6 +50,10 @@ const pointsStreak = ref(0)
 const checkingIn = ref(false)
 const checkinMessage = ref<string | null>(null)
 const justCheckedIn = ref(false)
+const confettiPieces = ref<number[]>([])
+const badges = ref<Array<{ code: string; name: string; description: string; icon: string; unlocked: boolean; unlockedAt: string | null }>>([])
+const leaderboard = ref<Array<{ rank: number; id: number; name: string; avatar: string | null; points: number; streak: number }>>([])
+const userRank = ref<number | null>(null)
 
 const nextMilestone = computed(() => {
     const s = pointsStreak.value
@@ -84,12 +88,25 @@ const streakTier = computed(() => {
 
 async function loadPoints(): Promise<void> {
     try {
-        const { data: payload } = await api.get<{ balance: number; currentStreak: number }>('/points')
+        const { data: payload } = await api.get<{ balance: number; currentStreak: number; badges?: typeof badges.value }>('/points')
         pointsBalance.value = payload.balance
         pointsStreak.value = payload.currentStreak
+        if (payload.badges) badges.value = payload.badges
     } catch {
         // non-critical
     }
+    try {
+        const { data: payload } = await api.get<{ entries: typeof leaderboard.value; userRank: number | null }>('/leaderboard')
+        leaderboard.value = payload.entries
+        userRank.value = payload.userRank
+    } catch {
+        // non-critical
+    }
+}
+
+function triggerConfetti(): void {
+    confettiPieces.value = Array.from({ length: 40 }, (_, i) => i)
+    setTimeout(() => { confettiPieces.value = [] }, 2200)
 }
 
 async function handleCheckin(): Promise<void> {
@@ -103,7 +120,9 @@ async function handleCheckin(): Promise<void> {
         checkinMessage.value = payload.message
         if (!payload.alreadyCheckedIn) {
             justCheckedIn.value = true
+            triggerConfetti()
             setTimeout(() => { justCheckedIn.value = false }, 2500)
+            loadPoints()
         }
     } catch (err) {
         const response = (err as { response?: { data?: { message?: string } } }).response
@@ -203,6 +222,14 @@ onMounted(() => {
                 <template v-else-if="data">
                     <section class="mt-6">
                         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-rose-500/15 p-6 ring-1 ring-amber-500/20">
+                            <div v-if="confettiPieces.length" class="pointer-events-none absolute inset-0 overflow-hidden">
+                                <span
+                                    v-for="p in confettiPieces"
+                                    :key="p"
+                                    class="confetti-piece"
+                                    :style="{ left: (Math.random() * 100) + '%', animationDelay: (Math.random() * 0.4) + 's', background: ['#f59e0b','#fb923c','#f43f5e','#a855f7','#22c55e','#3b82f6'][p % 6] }"
+                                />
+                            </div>
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div class="flex items-center gap-4">
                                     <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-3xl shadow-lg shadow-orange-500/30">
@@ -250,7 +277,7 @@ onMounted(() => {
                                             ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/40'
                                             : 'bg-surface-container-high text-on-surface-variant'"
                                     >
-                                        {{ pointsStreak >= m ? '✓' : '○' }} {{ m }} hari
+                                        {{ pointsStreak >= m ? 'OK' : 'o' }} {{ m }} hari
                                         <span class="ml-1 opacity-70">
                                             +{{ m === 7 ? 20 : m === 30 ? 100 : 500 }}
                                         </span>
@@ -262,6 +289,49 @@ onMounted(() => {
                                 <span>Besok kamu bisa dapat <span class="font-semibold text-amber-600">+{{ tomorrowReward }} poin</span> jika check-in.</span>
                                 <span class="rounded-full bg-surface/60 px-3 py-1 text-label-sm">Tier: {{ streakTier.label }}</span>
                             </div>
+                        </div>
+                    </section>
+
+                    <section class="mt-6 grid gap-6 lg:grid-cols-2">
+                        <div class="card">
+                            <h2 class="text-title-md font-semibold">Badge Kamu</h2>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">Kumpulkan badge dengan belajar konsisten.</p>
+                            <div class="mt-4 grid grid-cols-3 gap-3">
+                                <div
+                                    v-for="badge in badges"
+                                    :key="badge.code"
+                                    class="flex flex-col items-center gap-1 rounded-xl p-3 text-center transition-all"
+                                    :class="badge.unlocked
+                                        ? 'bg-amber-500/10 ring-1 ring-amber-500/30'
+                                        : 'bg-surface-container-low opacity-50 grayscale'"
+                                >
+                                    <span class="text-2xl">{{ badge.icon }}</span>
+                                    <span class="text-label-sm font-semibold">{{ badge.name }}</span>
+                                </div>
+                            </div>
+                            <p v-if="badges.length === 0" class="mt-4 text-body-sm text-on-surface-variant">Belum ada badge.</p>
+                        </div>
+
+                        <div class="card">
+                            <h2 class="text-title-md font-semibold">Papan Peringkat</h2>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">
+                                Top 10 pembelajar. Peringkatmu: <span class="font-semibold text-primary">{{ userRank ?? '-' }}</span>
+                            </p>
+                            <ol class="mt-4 space-y-2">
+                                <li
+                                    v-for="entry in leaderboard.slice(0, 10)"
+                                    :key="entry.id"
+                                    class="flex items-center gap-3 rounded-xl px-3 py-2"
+                                    :class="entry.rank <= 3 ? 'bg-amber-500/10' : 'bg-surface-container-low/60'"
+                                >
+                                    <span class="w-6 text-center text-label-md font-bold" :class="entry.rank === 1 ? 'text-amber-500' : entry.rank === 2 ? 'text-slate-400' : entry.rank === 3 ? 'text-orange-600' : 'text-on-surface-variant'">
+                                        {{ entry.rank === 1 ? '1st' : entry.rank === 2 ? '2nd' : entry.rank === 3 ? '3rd' : entry.rank }}
+                                    </span>
+                                    <span class="flex-1 truncate text-body-sm font-medium">{{ entry.name }}</span>
+                                    <span class="text-label-sm text-on-surface-variant">🔥 {{ entry.streak }}</span>
+                                    <span class="text-label-sm font-semibold text-primary">{{ entry.points }} poin</span>
+                                </li>
+                            </ol>
                         </div>
                     </section>
 
@@ -396,3 +466,19 @@ onMounted(() => {
         />
     </AppLayout>
 </template>
+
+<style scoped>
+.confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 14px;
+    border-radius: 2px;
+    opacity: 0.9;
+    animation: confetti-fall 2s ease-out forwards;
+}
+@keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(260px) rotate(720deg); opacity: 0; }
+}
+</style>

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseReviewController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DiscussionController;
+use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\LearningController;
 use App\Http\Controllers\Api\LessonNoteController;
 use App\Http\Controllers\Api\NoteListController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\AvatarController;
 use App\Models\Category;
+use App\Services\BadgeService;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -51,6 +53,10 @@ Route::get('/categories', function () {
 Route::get('/certificates/verify/{code}', [CertificateController::class, 'verify']);
 Route::get('/plans', [SubscriptionController::class, 'index']);
 Route::get('/plans/{slug}', [SubscriptionController::class, 'show']);
+Route::get('/leaderboard', [LeaderboardController::class, 'index']);
+Route::get('/badges', function () {
+    return response()->json(['badges' => BadgeService::catalog()]);
+});
 
 Route::post('/payments/webhook', [PaymentWebhookController::class, 'handle']);
 

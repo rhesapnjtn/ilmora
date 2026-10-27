@@ -7,11 +7,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\QuizAttempt;
+use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
+    public function __construct(private readonly PointsService $points) {}
+
     public function show(Request $request, string $slug): JsonResponse
     {
         $course = Course::query()->where('slug', $slug)->firstOrFail();
@@ -68,6 +71,17 @@ class QuizController extends Controller
             'passed' => $passed,
             'answers' => $answers,
         ]);
+
+        if ($passed) {
+            $this->points->award(
+                $user,
+                'quiz_pass',
+                PointsService::QUIZ_PASS,
+                'quiz',
+                (int) $quiz->id,
+                'Lulus quiz: '.$course->title,
+            );
+        }
 
         return response()->json([
             'attempt' => $attempt,

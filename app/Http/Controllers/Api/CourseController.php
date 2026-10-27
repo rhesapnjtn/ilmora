@@ -106,6 +106,7 @@ class CourseController extends Controller
             'accent' => $course->accent,
             'popular' => (bool) $course->popular,
             'free' => (bool) $course->is_free,
+            'pointsCost' => $course->points_cost,
         ];
     }
 

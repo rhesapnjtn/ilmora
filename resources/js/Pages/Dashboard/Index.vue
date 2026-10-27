@@ -45,6 +45,37 @@ const error = ref<string | null>(null)
 const confirmLogoutOpen = ref(false)
 const loggingOut = ref(false)
 
+const pointsBalance = ref(0)
+const pointsStreak = ref(0)
+const checkingIn = ref(false)
+const checkinMessage = ref<string | null>(null)
+
+async function loadPoints(): Promise<void> {
+    try {
+        const { data: payload } = await api.get<{ balance: number; currentStreak: number }>('/points')
+        pointsBalance.value = payload.balance
+        pointsStreak.value = payload.currentStreak
+    } catch {
+        // non-critical
+    }
+}
+
+async function handleCheckin(): Promise<void> {
+    checkingIn.value = true
+    checkinMessage.value = null
+    try {
+        const { data: payload } = await api.post<{ message: string; balance: number; streak: number }>('/checkin')
+        pointsBalance.value = payload.balance
+        pointsStreak.value = payload.streak
+        checkinMessage.value = payload.message
+    } catch (err) {
+        const response = (err as { response?: { data?: { message?: string } } }).response
+        checkinMessage.value = response?.data?.message ?? 'Gagal check-in.'
+    } finally {
+        checkingIn.value = false
+    }
+}
+
 const greeting = computed(() => data.value?.user.name ?? user.value?.name ?? 'Siswa')
 
 const circumference = 2 * Math.PI * 52
@@ -85,7 +116,10 @@ async function handleLogout(): Promise<void> {
     }
 }
 
-onMounted(loadDashboard)
+onMounted(() => {
+    loadDashboard()
+    loadPoints()
+})
 </script>
 
 <template>
@@ -130,6 +164,21 @@ onMounted(loadDashboard)
                 </div>
 
                 <template v-else-if="data">
+                    <section class="mt-6">
+                        <div class="card flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-title-md font-semibold">Poin Pembelajaran</h2>
+                                <p class="mt-1 text-body-sm text-on-surface-variant">
+                                    Saldo: <span class="font-semibold text-on-surface">{{ pointsBalance }}</span> poin · Streak: {{ pointsStreak }} hari
+                                </p>
+                                <p v-if="checkinMessage" class="mt-1 text-body-sm text-tertiary">{{ checkinMessage }}</p>
+                            </div>
+                            <button type="button" class="btn-primary" :disabled="checkingIn" @click="handleCheckin">
+                                {{ checkingIn ? 'Memproses...' : 'Check-in Hari Ini' }}
+                            </button>
+                        </div>
+                    </section>
+
                     <section class="mt-8 grid gap-6 lg:grid-cols-3">
                         <div class="card flex items-center gap-6 lg:col-span-2">
                             <div class="relative h-32 w-32 shrink-0">

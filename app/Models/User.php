@@ -28,6 +28,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'current_streak',
+        'longest_streak',
+        'last_checkin_at',
     ];
 
     /**
@@ -50,6 +53,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'current_streak' => 'integer',
+            'longest_streak' => 'integer',
+            'last_checkin_at' => 'date',
         ];
     }
 
@@ -79,6 +85,10 @@ class User extends Authenticatable
     public function hasAccessToCourse(Course $course): bool
     {
         if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->courseRedemptions()->where('course_id', $course->getKey())->exists()) {
             return true;
         }
 
@@ -145,6 +155,16 @@ class User extends Authenticatable
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
+    public function courseRedemptions(): HasMany
+    {
+        return $this->hasMany(CourseRedemption::class);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Mail\CertificateMail;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseLesson;
+use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 
 class LearningController extends Controller
 {
+    public function __construct(private readonly PointsService $points) {}
+
     public function show(Request $request, string $slug, string $lesson): JsonResponse
     {
         $course = Course::query()
@@ -54,6 +57,7 @@ class LearningController extends Controller
                 'course' => [
                     'slug' => $course->slug,
                     'title' => $course->title,
+                    'pointsCost' => $course->points_cost,
                 ],
                 'lesson' => [
                     'id' => $current->slug,
@@ -201,6 +205,28 @@ class LearningController extends Controller
 
         if ($progress === 100) {
             $this->issueCertificate($user->id, $course->id);
+        }
+
+        if ($isCompleted) {
+            $this->points->award(
+                $user,
+                'lesson_complete',
+                PointsService::LESSON_COMPLETE,
+                'course_lesson',
+                (int) $currentLesson->id,
+                'Menyelesaikan lesson: '.$currentLesson->title,
+            );
+
+            if ($progress === 100) {
+                $this->points->award(
+                    $user,
+                    'course_complete',
+                    PointsService::COURSE_COMPLETE,
+                    'course',
+                    (int) $course->id,
+                    'Menyelesaikan kursus: '.$course->title,
+                );
+            }
         }
 
         return response()->json([

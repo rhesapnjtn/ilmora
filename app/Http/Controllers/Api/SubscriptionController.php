@@ -7,10 +7,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CancelSubscriptionRequest;
 use App\Http\Requests\StoreSubscriptionRequest;
+use App\Models\Course;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\SubscriptionService;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -156,6 +158,10 @@ class SubscriptionController extends Controller
      */
     private function presentPlan(Plan $plan): array
     {
+        $plan->loadMissing([
+            'courses' => fn (BelongsToMany $query) => $query->withCount('lessons')->orderBy('title'),
+        ]);
+
         return [
             'id' => $plan->slug,
             'name' => $plan->name,
@@ -163,6 +169,15 @@ class SubscriptionController extends Controller
             'annual' => (int) $plan->annual,
             'highlighted' => (bool) $plan->highlighted,
             'features' => $plan->features ?? [],
+            'courses' => $plan->courses
+                ->map(fn (Course $course): array => [
+                    'slug' => $course->slug,
+                    'title' => $course->title,
+                    'level' => $course->level,
+                    'lessonsCount' => (int) ($course->lessons_count ?? 0),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 

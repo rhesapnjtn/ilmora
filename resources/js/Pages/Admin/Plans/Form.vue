@@ -6,6 +6,14 @@ import Button from '@/Components/Button.vue'
 import Input from '@/Components/Input.vue'
 import api from '@/lib/api'
 
+interface CourseOption {
+    id: number
+    title: string
+    slug: string
+    level: string
+    published: boolean
+}
+
 interface Plan {
     id: number
     name: string
@@ -16,6 +24,7 @@ interface Plan {
     features: string[]
     isActive: boolean
     sortOrder: number
+    courseIds: number[]
 }
 
 const route = useRoute()
@@ -29,6 +38,8 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const errors = ref<Record<string, string>>({})
+const courses = ref<CourseOption[]>([])
+const courseSearch = ref('')
 
 const form = reactive({
     name: '',
@@ -39,7 +50,24 @@ const form = reactive({
     is_active: true,
     sort_order: 0,
     featuresText: '',
+    courseIds: [] as number[],
 })
+
+const filteredCourses = computed(() =>
+    courses.value.filter((course) =>
+        course.title.toLowerCase().includes(courseSearch.value.trim().toLowerCase()) ||
+        course.level.toLowerCase().includes(courseSearch.value.trim().toLowerCase()),
+    ),
+)
+
+function toggleCourse(id: number): void {
+    const index = form.courseIds.indexOf(id)
+    if (index === -1) {
+        form.courseIds.push(id)
+    } else {
+        form.courseIds.splice(index, 1)
+    }
+}
 
 function firstError(key: string): string | undefined {
     return errors.value[key]
@@ -52,7 +80,20 @@ function toLines(value: string): string[] {
         .filter((line) => line !== '')
 }
 
+async function loadCourses(): Promise<void> {
+    try {
+        const { data } = await api.get<{ courses: CourseOption[] }>('/admin/courses', {
+            params: { per_page: 100 },
+        })
+        courses.value = data.courses
+    } catch {
+        courses.value = []
+    }
+}
+
 async function loadPlan(): Promise<void> {
+    await loadCourses()
+
     if (!isEdit.value || !planId.value) {
         loading.value = false
         return
@@ -70,6 +111,7 @@ async function loadPlan(): Promise<void> {
             is_active: plan.isActive ?? true,
             sort_order: plan.sortOrder ?? 0,
             featuresText: (plan.features ?? []).join('\n'),
+            courseIds: plan.courseIds ?? [],
         })
     } catch {
         error.value = 'Gagal memuat data paket.'
@@ -93,6 +135,7 @@ async function submit(): Promise<void> {
         is_active: form.is_active,
         sort_order: form.sort_order,
         features: toLines(form.featuresText),
+        course_ids: form.courseIds,
     }
 
     try {
@@ -162,6 +205,39 @@ onMounted(loadPlan)
                         <textarea id="plan-features" v-model="form.featuresText" rows="6" class="input h-auto py-3" placeholder="Akses seluruh katalog kursus&#10;Sertifikat premium&#10;Akses 3 perangkat" />
                         <p v-if="firstError('features')" class="mt-1.5 text-body-sm text-error" role="alert">{{ firstError('features') }}</p>
                     </div>
+                </div>
+
+                <div class="card space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="text-title-lg font-semibold">Kursus dalam Paket</h3>
+                        <span class="text-label-sm text-on-surface-variant">{{ form.courseIds.length }} dipilih</span>
+                    </div>
+                    <input
+                        v-model="courseSearch"
+                        type="search"
+                        class="input"
+                        placeholder="Cari kursus..."
+                    />
+                    <div class="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-outline-variant/60 p-2">
+                        <label
+                            v-for="course in filteredCourses"
+                            :key="course.id"
+                            class="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-container-low"
+                        >
+                            <input
+                                type="checkbox"
+                                class="h-4 w-4 rounded text-primary"
+                                :checked="form.courseIds.includes(course.id)"
+                                @change="toggleCourse(course.id)"
+                            />
+                            <span class="flex-1 text-body-sm">
+                                {{ course.title }}
+                                <span class="ml-1 text-label-sm text-on-surface-variant">({{ course.level }}{{ course.published ? '' : ' · draft' }})</span>
+                            </span>
+                        </label>
+                        <p v-if="filteredCourses.length === 0" class="px-2 py-3 text-body-sm text-on-surface-variant">Tidak ada kursus yang cocok.</p>
+                    </div>
+                    <p v-if="firstError('course_ids')" class="mt-1.5 text-body-sm text-error" role="alert">{{ firstError('course_ids') }}</p>
                 </div>
             </div>
 

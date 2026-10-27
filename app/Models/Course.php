@@ -106,6 +106,14 @@ class Course extends Model
     }
 
     /**
+     * @return BelongsToMany<Plan, $this>
+     */
+    public function plans(): BelongsToMany
+    {
+        return $this->belongsToMany(Plan::class, 'plan_course')->withTimestamps();
+    }
+
+    /**
      * @param  Builder<Course>  $query
      * @return Builder<Course>
      */

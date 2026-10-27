@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\Course;
 use App\Models\Plan;
 use App\Support\DemoCatalog;
 use Illuminate\Database\Seeder;
 
 class PlanSeeder extends Seeder
 {
-    /**
-     * Seed the subscription plans so the public pricing page and the admin
-     * panel operate on persisted records.
-     */
     public function run(): void
     {
         foreach (DemoCatalog::plans() as $index => $item) {
-            Plan::updateOrCreate(
+            $plan = Plan::updateOrCreate(
                 ['slug' => $item['id']],
                 [
                     'name' => $item['name'],
@@ -29,6 +26,16 @@ class PlanSeeder extends Seeder
                     'sort_order' => $index,
                 ],
             );
+
+            $courseIds = match ($item['id']) {
+                'basic' => Course::query()->where('published', true)->where('level', 'Pemula')->pluck('id')->all(),
+                'premium', 'pro' => Course::query()->where('published', true)->pluck('id')->all(),
+                default => null,
+            };
+
+            if ($courseIds !== null) {
+                $plan->courses()->sync($courseIds);
+            }
         }
     }
 }

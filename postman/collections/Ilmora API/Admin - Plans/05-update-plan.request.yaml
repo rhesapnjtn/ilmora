@@ -15,7 +15,8 @@ body:
       "name": "Paket Uji Otomatis (diperbarui)",
       "monthly": 60000,
       "annual": 600000,
-      "features": ["Fitur uji 1", "Fitur uji 2", "Fitur uji 3"]
+      "features": ["Fitur uji 1", "Fitur uji 2", "Fitur uji 3"],
+      "course_ids": []
     }
 scripts:
   - type: afterResponse

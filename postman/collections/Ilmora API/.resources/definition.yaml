@@ -9,9 +9,9 @@ variables:
   testUserPassword: Password123
   newPassword: Password1234
   courseSlug: laravel-vue-3-full-stack
-  lessonSlug: setup-project-laravel
+  lessonSlug: pengenalan-ekosistem-full-stack
   certificateId: ilr-cert-2026-001
-  planSlug: basic
+  planSlug: premium
   courseId: ""
   lessonId: ""
   planId: ""
@@ -51,9 +51,9 @@ scripts:
         testUserPassword: 'Password123',
         newPassword: 'Password1234',
         courseSlug: 'laravel-vue-3-full-stack',
-        lessonSlug: 'setup-project-laravel',
+        lessonSlug: 'pengenalan-ekosistem-full-stack',
         certificateId: 'ilr-cert-2026-001',
-        planSlug: 'basic',
+        planSlug: 'premium',
       };
 
       // pm.environment is undefined when no environment is selected.

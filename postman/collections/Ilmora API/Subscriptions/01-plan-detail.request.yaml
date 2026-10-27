@@ -16,5 +16,6 @@ scripts:
       pm.test('has plan detail and discountPercent', () => {
         const json = pm.response.json();
         pm.expect(json).to.include.keys('plan', 'discountPercent');
-        pm.expect(json.plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features');
+        pm.expect(json.plan).to.include.keys('id', 'name', 'monthly', 'annual', 'highlighted', 'features', 'courses');
+        pm.expect(json.plan.courses).to.be.an('array');
       });

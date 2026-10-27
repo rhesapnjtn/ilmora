@@ -40,12 +40,17 @@ class LearningController extends Controller
         $user = $request->user();
 
         $isFree = (bool) $current->is_free;
-        $hasAccess = $isFree || ($user !== null && ($user->isAdmin() || $user->hasActiveSubscription()));
+        $hasAccess = $isFree || ($user !== null && $user->hasAccessToCourse($course));
 
         if (! $hasAccess) {
+            $hasActiveSubscription = $user !== null && $user->hasActiveSubscription();
+
             return response()->json([
-                'message' => 'Materi ini memerlukan langganan aktif. Silakan pilih paket langganan untuk melanjutkan.',
+                'message' => $hasActiveSubscription
+                    ? 'Kursus ini tidak termasuk dalam paket langgananmu. Silakan upgrade paket untuk melanjutkan.'
+                    : 'Materi ini memerlukan langganan aktif. Silakan pilih paket langganan untuk melanjutkan.',
                 'requires_subscription' => true,
+                'requires_upgrade' => $hasActiveSubscription,
                 'course' => [
                     'slug' => $course->slug,
                     'title' => $course->title,
@@ -145,12 +150,17 @@ class LearningController extends Controller
         }
 
         $isFree = (bool) $currentLesson->is_free;
-        $hasAccess = $isFree || $user->isAdmin() || $user->hasActiveSubscription();
+        $hasAccess = $isFree || $user->hasAccessToCourse($course);
 
         if (! $hasAccess) {
+            $hasActiveSubscription = $user->hasActiveSubscription();
+
             return response()->json([
-                'message' => 'Materi ini memerlukan langganan aktif.',
+                'message' => $hasActiveSubscription
+                    ? 'Kursus ini tidak termasuk dalam paket langgananmu. Silakan upgrade paket untuk melanjutkan.'
+                    : 'Materi ini memerlukan langganan aktif.',
                 'requires_subscription' => true,
+                'requires_upgrade' => $hasActiveSubscription,
             ], 403);
         }
 

@@ -31,4 +31,24 @@ class AvatarController extends Controller
             ],
         ]);
     }
+
+    public function destroy(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
+            $user->save();
+        }
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar_url' => null,
+            ],
+        ]);
+    }
 }

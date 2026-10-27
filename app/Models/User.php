@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -56,6 +57,53 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where(function ($query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now()->toDateString());
+            })
+            ->exists();
+    }
+
+    /**
+     * @return HasMany<CourseEnrollment, $this>
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
+
+    /**
+     * @return BelongsToMany<Course, $this>
+     */
+    public function enrolledCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_enrollments')
+            ->withPivot(['enrolled_at', 'completed_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<CourseLessonCompletion, $this>
+     */
+    public function lessonCompletions(): HasMany
+    {
+        return $this->hasMany(CourseLessonCompletion::class);
+    }
+
+    /**
+     * @return BelongsToMany<CourseLesson, $this>
+     */
+    public function completedLessons(): BelongsToMany
+    {
+        return $this->belongsToMany(CourseLesson::class, 'course_lesson_completions')
+            ->withPivot('completed_at')
+            ->withTimestamps();
+    }
+
     /**
      * Send the password reset notification using Ilmora's branded email that
      * points back to the single-page application.
@@ -79,6 +127,38 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * @return HasMany<LessonNote, $this>
+     */
+    public function lessonNotes(): HasMany
+    {
+        return $this->hasMany(LessonNote::class);
+    }
+
+    /**
+     * @return HasMany<Wishlist, $this>
+     */
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * @return HasMany<CourseReview, $this>
+     */
+    public function courseReviews(): HasMany
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
+    /**
+     * @return HasMany<Certificate, $this>
+     */
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
     }
 
     protected $appends = ['avatar_url'];

@@ -19,9 +19,11 @@ const navItems = [
     { label: 'Dashboard', to: '/admin/dashboard', match: '/admin/dashboard', icon: 'grid' },
     { label: 'Kursus', to: '/admin/kursus', match: '/admin/kursus', icon: 'book' },
     { label: 'Paket', to: '/admin/paket', match: '/admin/paket', icon: 'tag' },
+    { label: 'Kategori', to: '/admin/kategori', match: '/admin/kategori', icon: 'tag' },
     { label: 'Pengguna', to: '/admin/pengguna', match: '/admin/pengguna', icon: 'users' },
     { label: 'Langganan', to: '/admin/langganan', match: '/admin/langganan', icon: 'card' },
     { label: 'Pembayaran', to: '/admin/pembayaran', match: '/admin/pembayaran', icon: 'wallet' },
+    { label: 'Ulasan', to: '/admin/ulasan', match: '/admin/ulasan', icon: 'tag' },
 ]
 
 function isActive(match: string): boolean {

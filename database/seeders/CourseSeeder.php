@@ -17,6 +17,8 @@ class CourseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(CategorySeeder::class);
+
         foreach (DemoCatalog::courses() as $item) {
             $detail = DemoCatalog::find($item['slug']) ?? $item;
 

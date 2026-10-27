@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CourseEnrollment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,30 +14,6 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $activeCourses = [
-            [
-                'slug' => 'laravel-vue-3-full-stack',
-                'title' => 'Laravel 10 + Vue 3 Full Stack Web Development',
-                'category' => 'Pemrograman',
-                'module' => 'Modul 12: Integrasi Inertia & RESTful API',
-                'progress' => 40,
-            ],
-            [
-                'slug' => 'ui-ux-design-prototyping',
-                'title' => 'UI/UX Design: Design Thinking & Figma',
-                'category' => 'Desain UI/UX',
-                'module' => 'Modul 8: Prototyping & Usability Testing',
-                'progress' => 60,
-            ],
-            [
-                'slug' => 'digital-marketing-growth',
-                'title' => 'Digital Marketing & Social Media Content',
-                'category' => 'Marketing',
-                'module' => 'Modul 3: Riset Audiens & Algoritma Konten',
-                'progress' => 25,
-            ],
-        ];
-
         $user = $request->user();
 
         $activeSubscription = $user?->subscriptions()
@@ -50,16 +28,89 @@ class DashboardController extends Controller
 
         $subscription = $activeSubscription ?? $pendingSubscription;
 
+        /** @var Collection<int, CourseEnrollment> $enrollments */
+        $enrollments = $user?->enrollments()
+            ->with(['course.lessons'])
+            ->latest('enrolled_at')
+            ->get()
+            ?? collect();
+
+        $completedLessonIds = $user?->lessonCompletions()->pluck('course_lesson_id')->all() ?? [];
+
+        $activeCourses = $enrollments->map(function (CourseEnrollment $enrollment) use ($completedLessonIds): array {
+            $course = $enrollment->course;
+            $lessons = $course->lessons;
+            $totalLessons = $lessons->count();
+
+            $completedForCourse = $lessons->filter(
+                fn ($l) => in_array($l->id, $completedLessonIds, true)
+            )->count();
+
+            $progress = $totalLessons > 0
+                ? (int) round(($completedForCourse / $totalLessons) * 100)
+                : 0;
+
+            $currentLesson = $lessons->first(
+                fn ($l) => ! in_array($l->id, $completedLessonIds, true)
+            );
+
+            return [
+                'slug' => $course->slug,
+                'title' => $course->title,
+                'category' => $course->category_name,
+                'module' => $currentLesson?->module ?? $lessons->last()?->module ?? '-',
+                'progress' => $progress,
+                'completedCount' => $completedForCourse,
+                'totalLessons' => $totalLessons,
+            ];
+        })->values()->all();
+
+        $totalCompletedLessons = count($completedLessonIds);
+
+        $learningMinutes = 0;
+
+        if ($totalCompletedLessons > 0) {
+            $completedLessonRecords = $user?->lessonCompletions()
+                ->join('course_lessons', 'course_lesson_completions.course_lesson_id', '=', 'course_lessons.id')
+                ->select('course_lessons.duration')
+                ->get();
+
+            $learningMinutes = (int) round($completedLessonRecords
+                ->sum(function ($row): int {
+                    $parts = explode(':', (string) ($row->duration ?? '0:0'));
+                    $minutes = (int) ($parts[0] ?? 0);
+                    $seconds = (int) ($parts[1] ?? 0);
+
+                    return $minutes * 60 + $seconds;
+                }) / 60);
+        }
+
+        $completedCoursesCount = $enrollments->filter(
+            fn (CourseEnrollment $e) => $e->completed_at !== null
+        )->count();
+
+        $overallProgress = 0;
+
+        if ($enrollments->isNotEmpty()) {
+            $totalLessonsAll = $enrollments->sum(
+                fn (CourseEnrollment $e) => $e->course->lessons->count()
+            );
+
+            if ($totalLessonsAll > 0) {
+                $overallProgress = (int) round(($totalCompletedLessons / $totalLessonsAll) * 100);
+            }
+        }
+
         return response()->json([
             'user' => [
                 'name' => $user?->name,
             ],
             'progress' => [
-                'percent' => 65,
-                'completed' => 3,
-                'total' => 5,
+                'percent' => $overallProgress,
+                'completed' => $completedCoursesCount,
+                'total' => $enrollments->count(),
             ],
-            'streakDays' => 5,
+            'streakDays' => 0,
             'subscription' => [
                 'id' => $subscription?->id,
                 'plan' => $subscription?->plan,
@@ -71,9 +122,9 @@ class DashboardController extends Controller
                 'hasActive' => $activeSubscription !== null,
             ],
             'stats' => [
-                'courses' => 3,
-                'completedLessons' => 24,
-                'learningMinutes' => 1440,
+                'courses' => $enrollments->count(),
+                'completedLessons' => $totalCompletedLessons,
+                'learningMinutes' => $learningMinutes,
             ],
             'activeCourses' => $activeCourses,
             'enrolledCourses' => $activeCourses,

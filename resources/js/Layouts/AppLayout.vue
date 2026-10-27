@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import api from '@/lib/api'
 import BottomNav from '@/Components/BottomNav.vue'
 import ConfirmDialog from '@/Components/ConfirmDialog.vue'
 import Logo from '@/Components/Logo.vue'
@@ -16,11 +17,69 @@ const mobileMenuOpen = ref(false)
 const confirmLogoutOpen = ref(false)
 const loggingOut = ref(false)
 
+const searchOpen = ref(false)
+const searchQuery = ref('')
+const searchResults = ref<{ slug: string; title: string; category: string }[]>([])
+const searchLoading = ref(false)
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+function openSearch(): void {
+    searchOpen.value = true
+    searchQuery.value = ''
+    searchResults.value = []
+}
+
+function closeSearch(): void {
+    searchOpen.value = false
+}
+
+function onSearchInput(): void {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(async () => {
+        if (!searchQuery.value.trim()) {
+            searchResults.value = []
+            return
+        }
+        searchLoading.value = true
+        try {
+            const { data } = await api.get<{ courses: { slug: string; title: string; category: string }[] }>('/courses', {
+                params: { search: searchQuery.value },
+            })
+            searchResults.value = data.courses ?? []
+        } catch {
+            searchResults.value = []
+        } finally {
+            searchLoading.value = false
+        }
+    }, 250)
+}
+
+function goSearch(): void {
+    if (searchQuery.value.trim()) {
+        router.push({ path: '/kursus', query: { search: searchQuery.value } })
+        closeSearch()
+    }
+}
+
+function handleKeydown(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        openSearch()
+    }
+    if (e.key === 'Escape' && searchOpen.value) {
+        closeSearch()
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+
 const currentPath = computed(() => route.path)
 
 const navItems = [
     { label: 'Beranda', to: '/', match: '/' },
     { label: 'Kursus', to: '/kursus', match: '/kursus' },
+    { label: 'Catatan', to: '/catatan', match: '/catatan' },
     { label: 'Langganan', to: '/langganan', match: '/langganan' },
 ]
 
@@ -90,6 +149,18 @@ async function confirmLogout(): Promise<void> {
                 </nav>
 
                 <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="hidden items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface-variant transition-colors hover:border-primary hover:text-primary sm:inline-flex"
+                        aria-label="Cari kursus (Ctrl+K)"
+                        @click="openSearch"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <span>Cari...</span>
+                        <kbd class="rounded bg-surface-container-high px-1.5 text-label-sm">Ctrl K</kbd>
+                    </button>
                     <RouterLink
                         v-if="isAdmin"
                         to="/admin/dashboard"
@@ -133,6 +204,44 @@ async function confirmLogout(): Promise<void> {
         <main class="mx-auto max-w-7xl px-4 pb-28 pt-6 md:pb-12">
             <slot />
         </main>
+
+        <Transition name="fade">
+            <div v-if="searchOpen" class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pt-20" @click.self="closeSearch">
+                <div class="w-full max-w-xl rounded-2xl bg-surface p-4 shadow-modal">
+                    <div class="flex items-center gap-2 border-b border-outline-variant pb-3">
+                        <svg class="h-5 w-5 text-on-surface-variant" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            class="flex-1 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none"
+                            placeholder="Cari kursus..."
+                            autofocus
+                            @input="onSearchInput"
+                            @keydown.enter="goSearch"
+                        />
+                        <button type="button" class="text-body-sm text-on-surface-variant" @click="closeSearch">Esc</button>
+                    </div>
+                    <div class="mt-3 max-h-80 overflow-y-auto">
+                        <p v-if="searchLoading" class="px-2 py-3 text-body-sm text-on-surface-variant">Mencari...</p>
+                        <ul v-else-if="searchResults.length" class="space-y-1">
+                            <li v-for="item in searchResults" :key="item.slug">
+                                <RouterLink
+                                    :to="`/kursus/${item.slug}`"
+                                    class="flex items-center justify-between rounded-xl px-3 py-2 transition-colors hover:bg-surface-container-low"
+                                    @click="closeSearch"
+                                >
+                                    <span class="text-body-md font-medium text-on-surface">{{ item.title }}</span>
+                                    <span class="text-body-sm text-on-surface-variant">{{ item.category }}</span>
+                                </RouterLink>
+                            </li>
+                        </ul>
+                        <p v-else-if="searchQuery.trim()" class="px-2 py-3 text-body-sm text-on-surface-variant">Tidak ditemukan.</p>
+                    </div>
+                </div>
+            </div>
+        </Transition>
 
         <BottomNav />
 

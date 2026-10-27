@@ -25,7 +25,7 @@ values:
     value: laravel-vue-3-full-stack
     description: Sample published course slug
   - key: lessonSlug
-    value: 2-1
+    value: setup-project-laravel
     description: Sample lesson slug within the sample course
   - key: certificateId
     value: ilr-cert-2026-001

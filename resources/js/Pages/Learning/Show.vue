@@ -7,8 +7,8 @@ import api from '@/lib/api'
 import { normalizeApiError } from '@/lib/errors'
 import { resolveVideo } from '@/lib/video'
 
-interface LessonItem { id: string; title: string; duration: string; module?: string }
-interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; materials: { label: string; size: string; type: string }[] }
+interface LessonItem { id: string; title: string; duration: string; module?: string; free: boolean; completed: boolean }
+interface Lesson extends LessonItem { index: number; total: number; description: string; code: string; videoUrl: string | null; isCompleted: boolean; materials: { label: string; size: string; type: string }[] }
 interface DiscussionUser { id: number; name: string; avatarUrl: string | null; role: 'user' | 'admin' }
 interface Reply { id: number; body: string; isAnswer: boolean; createdAt: string; updatedAt: string; user: DiscussionUser; canUpdate: boolean; canDelete: boolean }
 interface Discussion extends Reply { hasAcceptedAnswer: boolean; replies: Reply[] }
@@ -20,6 +20,7 @@ interface Payload {
     prev: string | null
     next: string | null
     progress: number
+    completedCount: number
 }
 
 const route = useRoute()
@@ -27,8 +28,52 @@ const data = ref<Payload | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const notFound = ref(false)
+const paywalled = ref(false)
+const paywallInfo = ref<{ courseSlug: string; courseTitle: string; lessonTitle: string } | null>(null)
 const activeTab = ref<'description' | 'notes' | 'discussion'>('description')
 const note = ref('')
+const noteSaving = ref(false)
+const noteLoaded = ref(false)
+const noteStatus = ref('')
+
+let noteTimer: ReturnType<typeof setTimeout> | null = null
+
+async function loadNote(): Promise<void> {
+    noteLoaded.value = false
+    try {
+        const { data } = await api.get<{ note: string | null }>(`/courses/${route.params.slug}/lessons/${route.params.lesson}/note`)
+        note.value = data.note ?? ''
+        noteLoaded.value = true
+        noteStatus.value = data.note ? 'Tersimpan' : ''
+    } catch {
+        // ignore
+    }
+}
+
+async function saveNote(): Promise<void> {
+    if (!noteLoaded.value) return
+    noteSaving.value = true
+    noteStatus.value = 'Menyimpan...'
+    try {
+        await api.put(`/courses/${route.params.slug}/lessons/${route.params.lesson}/note`, { content: note.value })
+        noteStatus.value = 'Tersimpan'
+    } catch {
+        noteStatus.value = 'Gagal menyimpan'
+    } finally {
+        noteSaving.value = false
+    }
+}
+
+watch(note, () => {
+    if (!noteLoaded.value) return
+    if (noteTimer) clearTimeout(noteTimer)
+    noteTimer = setTimeout(() => {
+        saveNote()
+    }, 800)
+})
+
+const completeLoading = ref(false)
+const completeError = ref<string | null>(null)
 
 const discussions = ref<Discussion[]>([])
 const discussionsLoading = ref(false)
@@ -53,7 +98,7 @@ const replyEditingId = ref<number | null>(null)
 const replyEditDraft = ref('')
 const replyEditSaving = ref(false)
 
-const completedCount = computed(() => data.value?.lesson.index ?? 0)
+const completedCount = computed(() => data.value?.completedCount ?? 0)
 
 const video = computed(() => resolveVideo(data.value?.lesson.videoUrl))
 
@@ -61,15 +106,58 @@ async function load(): Promise<void> {
     loading.value = true
     error.value = null
     notFound.value = false
+    paywalled.value = false
+    paywallInfo.value = null
     try {
         const { data: payload } = await api.get<Payload>(`/courses/${route.params.slug}/lessons/${route.params.lesson}`)
         data.value = payload
+        await loadNote()
     } catch (err) {
-        const status = (err as { response?: { status?: number } }).response?.status
-        if (status === 404) notFound.value = true
-        else error.value = 'Gagal memuat materi pelajaran.'
+        const e = err as { response?: { status?: number; data?: { requires_subscription?: boolean; course?: { slug: string; title: string }; lesson?: { title: string } } } }
+        const status = e.response?.status
+        if (status === 404) {
+            notFound.value = true
+        } else if (status === 403 && e.response?.data?.requires_subscription) {
+            paywalled.value = true
+            paywallInfo.value = {
+                courseSlug: e.response.data.course?.slug ?? String(route.params.slug),
+                courseTitle: e.response.data.course?.title ?? '',
+                lessonTitle: e.response.data.lesson?.title ?? '',
+            }
+        } else {
+            error.value = 'Gagal memuat materi pelajaran.'
+        }
     } finally {
         loading.value = false
+    }
+}
+
+async function toggleComplete(): Promise<void> {
+    if (!data.value) return
+    completeLoading.value = true
+    completeError.value = null
+    try {
+        const { data: res } = await api.post<{
+            completed: boolean
+            progress: number
+            completedCount: number
+            totalLessons: number
+            courseCompleted: boolean
+        }>(`/courses/${route.params.slug}/lessons/${route.params.lesson}/complete`)
+
+        // Patch local state
+        data.value.lesson.isCompleted = res.completed
+        data.value.progress = res.progress
+        data.value.completedCount = res.completedCount
+
+        // Update completed flags in sidebar lesson list
+        data.value.lessons = data.value.lessons.map(l =>
+            l.id === data.value!.lesson.id ? { ...l, completed: res.completed } : l,
+        )
+    } catch (err) {
+        completeError.value = 'Gagal menyimpan status selesai.'
+    } finally {
+        completeLoading.value = false
     }
 }
 
@@ -95,6 +183,7 @@ watch(() => route.params.lesson, async () => {
         loadDiscussions()
     }
 })
+
 watch(activeTab, (tab) => {
     if (tab === 'discussion' && !discussionsLoaded.value) {
         loadDiscussions()
@@ -408,6 +497,28 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
             <RouterLink to="/dashboard" class="btn-primary mt-6">Kembali ke Dashboard</RouterLink>
         </div>
 
+        <!-- Paywall Banner -->
+        <div v-else-if="paywalled" class="mx-auto flex max-w-lg flex-col items-center px-4 py-20 text-center">
+            <span class="flex h-20 w-20 items-center justify-center rounded-full bg-secondary/10 text-secondary" aria-hidden="true">
+                <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+            </span>
+            <h1 class="mt-5 text-headline-sm font-bold text-on-surface">Materi Premium</h1>
+            <p v-if="paywallInfo?.lessonTitle" class="mt-2 text-title-sm font-semibold text-on-surface-variant">{{ paywallInfo.lessonTitle }}</p>
+            <p class="mt-3 text-body-md text-on-surface-variant">
+                Materi ini hanya tersedia untuk pelanggan aktif.<br>
+                Pilih paket langganan yang sesuai untuk mengakses seluruh materi kursus.
+            </p>
+            <RouterLink to="/subscriptions" class="btn-primary mt-8 inline-flex items-center gap-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                Lihat Paket Langganan
+            </RouterLink>
+            <RouterLink v-if="paywallInfo?.courseSlug" :to="`/kursus/${paywallInfo.courseSlug}`" class="btn-secondary mt-3">
+                Kembali ke Detail Kursus
+            </RouterLink>
+        </div>
+
         <p v-else-if="error" class="rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ error }}</p>
 
         <div v-else-if="data" class="grid gap-8 lg:grid-cols-3">
@@ -444,6 +555,25 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
                     <span class="badge-primary">{{ data.course.level }}</span>
                 </div>
                 <h1 class="mt-3 text-headline-md font-bold tracking-tight">{{ data.lesson.title }}</h1>
+
+                <!-- Mark Complete Button -->
+                <div class="mt-4 flex items-center gap-3">
+                    <button
+                        type="button"
+                        :disabled="completeLoading"
+                        class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-label-lg font-semibold transition-all duration-200"
+                        :class="data.lesson.isCompleted
+                            ? 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
+                            : 'bg-primary text-white hover:bg-primary/90'"
+                        @click="toggleComplete"
+                    >
+                        <svg v-if="data.lesson.isCompleted" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg>
+                        {{ completeLoading ? 'Menyimpan...' : data.lesson.isCompleted ? 'Selesai ✓' : 'Tandai Selesai' }}
+                    </button>
+                    <p v-if="completeError" class="text-body-sm text-error" role="alert">{{ completeError }}</p>
+                    <span class="text-body-sm text-on-surface-variant">{{ data.progress }}% kursus selesai</span>
+                </div>
 
                 <div class="mt-6 flex items-center gap-3">
                     <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-label-lg font-bold text-primary">
@@ -505,6 +635,12 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
                             class="mt-2 w-full rounded-2xl border border-outline bg-surface p-4 text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="Tulis catatanmu untuk pelajaran ini..."
                         />
+                        <div class="mt-3 flex items-center justify-between">
+                            <span class="text-body-sm text-on-surface-variant">{{ noteStatus }}</span>
+                            <button type="button" class="btn-primary" :disabled="noteSaving" @click="saveNote">
+                                {{ noteSaving ? 'Menyimpan...' : 'Simpan Sekarang' }}
+                            </button>
+                        </div>
                     </div>
 
                     <div v-else class="mt-6 space-y-6">
@@ -765,7 +901,7 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
                         <span class="text-body-sm text-on-surface-variant">{{ completedCount }}/{{ data.lesson.total }}</span>
                     </div>
                     <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-                        <div class="h-full rounded-full bg-primary" :style="{ width: `${(completedCount / data.lesson.total) * 100}%` }" />
+                        <div class="h-full rounded-full bg-primary transition-all duration-500" :style="{ width: `${data.progress}%` }" />
                     </div>
 
                     <ul class="mt-5 space-y-1">
@@ -773,13 +909,13 @@ async function toggleAnswer(discussion: Discussion, reply: Reply): Promise<void>
                             <RouterLink
                                 :to="`/belajar/${data.course.slug}/${item.id}`"
                                 class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors"
-                                :class="i + 1 === data.lesson.index ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container-low'"
+                                :class="item.id === data.lesson.id ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container-low'"
                             >
                                 <span
                                     class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-label-sm font-bold"
-                                    :class="i + 1 < data.lesson.index ? 'bg-tertiary/15 text-tertiary' : i + 1 === data.lesson.index ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant'"
+                                    :class="item.completed ? 'bg-tertiary/15 text-tertiary' : item.id === data.lesson.id ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant'"
                                 >
-                                    <svg v-if="i + 1 < data.lesson.index" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                                    <svg v-if="item.completed" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
                                     <template v-else>{{ i + 1 }}</template>
                                 </span>
                                 <span class="flex-1 text-body-md">{{ item.title }}</span>

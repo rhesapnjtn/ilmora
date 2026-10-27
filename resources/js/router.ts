@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Sertifikat', requiresAuth: true },
     },
     {
+        path: '/catatan',
+        name: 'notes',
+        component: () => import('@/Pages/Notes/Index.vue'),
+        meta: { title: 'Catatan Saya', requiresAuth: true },
+    },
+    {
         path: '/sertifikat/:id',
         name: 'certificate-detail',
         component: () => import('@/Pages/Certificates/Show.vue'),
@@ -141,6 +147,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Kelola Paket', requiresAuth: true, requiresAdmin: true },
     },
     {
+        path: '/admin/kategori',
+        name: 'admin-categories',
+        component: () => import('@/Pages/Admin/Categories/Index.vue'),
+        meta: { title: 'Kelola Kategori', requiresAuth: true, requiresAdmin: true },
+    },
+    {
         path: '/admin/paket/baru',
         name: 'admin-plans-create',
         component: () => import('@/Pages/Admin/Plans/Form.vue'),
@@ -169,6 +181,12 @@ const routes: RouteRecordRaw[] = [
         name: 'admin-payments',
         component: () => import('@/Pages/Admin/Payments/Index.vue'),
         meta: { title: 'Kelola Pembayaran', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/ulasan',
+        name: 'admin-reviews',
+        component: () => import('@/Pages/Admin/Reviews/Index.vue'),
+        meta: { title: 'Moderasi Ulasan', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/kebijakan-privasi',

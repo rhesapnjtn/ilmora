@@ -7,10 +7,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -19,6 +21,8 @@ class AuthController extends Controller
         $user = User::create($request->validated());
 
         event(new Registered($user));
+
+        Mail::to($user)->send(new WelcomeMail($user));
 
         return response()->json([
             'user' => $user,

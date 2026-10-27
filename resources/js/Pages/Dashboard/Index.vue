@@ -50,6 +50,7 @@ const pointsStreak = ref(0)
 const checkingIn = ref(false)
 const checkinMessage = ref<string | null>(null)
 const justCheckedIn = ref(false)
+const showBadgeGuide = ref(false)
 const confettiPieces = ref<number[]>([])
 const badges = ref<Array<{ code: string; name: string; description: string; icon: string; unlocked: boolean; unlockedAt: string | null }>>([])
 const leaderboard = ref<Array<{ rank: number; id: number; name: string; avatar: string | null; points: number; streak: number }>>([])
@@ -309,6 +310,15 @@ onMounted(() => {
                                     <span class="text-label-sm font-semibold">{{ badge.name }}</span>
                                 </div>
                             </div>
+                            <button type="button" class="mt-3 text-label-sm font-medium text-primary hover:underline" @click="showBadgeGuide = !showBadgeGuide">
+                                {{ showBadgeGuide ? 'Sembunyikan cara mendapatkan' : 'Lihat cara mendapatkan badge' }}
+                            </button>
+                            <ul v-if="showBadgeGuide" class="mt-3 space-y-2 text-body-sm text-on-surface-variant">
+                                <li v-for="badge in badges" :key="'guide-' + badge.code" class="flex items-start gap-2">
+                                    <span>{{ badge.icon }}</span>
+                                    <span><span class="font-semibold text-on-surface">{{ badge.name }}</span> — {{ badge.description }}</span>
+                                </li>
+                            </ul>
                             <p v-if="badges.length === 0" class="mt-4 text-body-sm text-on-surface-variant">Belum ada badge.</p>
                         </div>
 

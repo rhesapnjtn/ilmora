@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CourseLesson extends Model
@@ -58,5 +59,23 @@ class CourseLesson extends Model
         return $this->hasMany(LessonDiscussion::class, 'lesson_id')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
+    }
+
+    /**
+     * @return HasMany<CourseLessonCompletion, $this>
+     */
+    public function completions(): HasMany
+    {
+        return $this->hasMany(CourseLessonCompletion::class);
+    }
+
+    /**
+     * @return BelongsToMany<User, $this>
+     */
+    public function completedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'course_lesson_completions')
+            ->withPivot('completed_at')
+            ->withTimestamps();
     }
 }

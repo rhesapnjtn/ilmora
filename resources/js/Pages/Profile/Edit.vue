@@ -153,6 +153,24 @@ async function onAvatarChange(event: Event): Promise<void> {
         avatarProcessing.value = false
     }
 }
+
+async function removeAvatar(): Promise<void> {
+    if (!user.value?.avatar_url && !avatarPreview.value) return
+    avatarProcessing.value = true
+    avatarError.value = null
+    try {
+        const { data } = await api.delete<{ user: { avatar_url: string | null } }>('/profile/avatar')
+        if (user.value) {
+            user.value.avatar_url = data.user.avatar_url
+        }
+        avatarPreview.value = null
+    } catch (error) {
+        const { message } = normalizeApiError(error)
+        avatarError.value = message ?? 'Gagal menghapus foto.'
+    } finally {
+        avatarProcessing.value = false
+    }
+}
 </script>
 
 <template>
@@ -208,6 +226,17 @@ async function onAvatarChange(event: Event): Promise<void> {
                     />
                 </div>
 
+                <div class="mt-3 flex items-center gap-2">
+                    <button
+                        v-if="user?.avatar_url || avatarPreview"
+                        type="button"
+                        class="text-body-sm font-semibold text-error transition-colors hover:text-error/80"
+                        :disabled="avatarProcessing"
+                        @click="removeAvatar"
+                    >
+                        Hapus foto
+                    </button>
+                </div>
                 <p class="mt-2 text-body-sm text-on-surface-variant">JPG, PNG, atau WebP. Maksimal 2 MB.</p>
                 <p v-if="avatarError" class="mt-1 text-body-sm text-error" role="alert">{{ avatarError }}</p>
             </div>

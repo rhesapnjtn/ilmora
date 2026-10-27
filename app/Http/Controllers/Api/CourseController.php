@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Course;
 use App\Support\DemoCatalog;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,7 +45,10 @@ class CourseController extends Controller
 
         return response()->json([
             'courses' => collect($courses->items())->map(fn (Course $course): array => $this->presentCard($course))->all(),
-            'categories' => DemoCatalog::categories(),
+            'categories' => Category::query()->orderBy('name')->get(['slug', 'name'])->map(fn (Category $category): array => [
+                'slug' => $category->slug,
+                'name' => $category->name,
+            ])->all() ?: DemoCatalog::categories(),
             'levels' => DemoCatalog::levels(),
             'meta' => [
                 'page' => $courses->currentPage(),

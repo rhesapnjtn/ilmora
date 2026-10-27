@@ -75,7 +75,7 @@ class ApiEndpointsTest extends TestCase
         $user = User::factory()->create();
 
         $this->withToken($user->createToken('test')->plainTextToken)
-            ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/2-1')
+            ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/1-1')
             ->assertOk()
             ->assertJsonStructure(['course', 'lesson', 'lessons', 'prev', 'next', 'progress']);
     }
@@ -83,11 +83,11 @@ class ApiEndpointsTest extends TestCase
     public function test_lesson_exposes_video_url(): void
     {
         $user = User::factory()->create();
-        $lesson = CourseLesson::query()->where('slug', '2-1')->firstOrFail();
+        $lesson = CourseLesson::query()->where('slug', '1-1')->firstOrFail();
         $lesson->update(['video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
 
         $this->withToken($user->createToken('test')->plainTextToken)
-            ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/2-1')
+            ->getJson('/api/courses/laravel-vue-3-full-stack/lessons/1-1')
             ->assertOk()
             ->assertJsonPath('lesson.videoUrl', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     }

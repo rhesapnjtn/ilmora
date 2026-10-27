@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useAuth } from '@/stores/auth'
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 import Badge from '@/Components/Badge.vue'
 import Modal from '@/Components/Modal.vue'
@@ -31,6 +32,7 @@ interface Course {
 }
 
 const route = useRoute()
+const { user } = useAuth()
 const course = ref<Course | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -38,6 +40,85 @@ const notFound = ref(false)
 const activeTab = ref<'curriculum' | 'about'>('curriculum')
 const openModules = ref<number[]>([0])
 const introOpen = ref(false)
+const wishlisted = ref(false)
+const wishlistLoading = ref(false)
+
+interface Review { id: number; rating: number; body: string | null; user: { id: number; name: string } }
+interface QuizQuestion { id: number; question: string; options: string[]; points: number }
+interface Quiz { id: number; title: string; passingScore: number; questions: QuizQuestion[] }
+const reviews = ref<Review[]>([])
+const reviewAverage = ref(0)
+const reviewCount = ref(0)
+const reviewRating = ref(5)
+const reviewBody = ref('')
+const reviewSubmitting = ref(false)
+
+const quiz = ref<Quiz | null>(null)
+const quizAnswers = ref<Record<number, number>>({})
+const quizSubmitting = ref(false)
+const quizResult = ref<{ score: number; total: number; passed: boolean; percent: number } | null>(null)
+
+async function loadQuiz(): Promise<void> {
+    if (!course.value) return
+    try {
+        const { data } = await api.get<{ quiz: Quiz }>(`/courses/${course.value.slug}/quiz`)
+        quiz.value = data.quiz
+    } catch {
+        quiz.value = null
+    }
+}
+
+async function submitQuiz(): Promise<void> {
+    if (!course.value || !quiz.value) return
+    quizSubmitting.value = true
+    try {
+        const { data } = await api.post<{ score: number; total: number; passed: boolean; percent: number }>(`/courses/${course.value.slug}/quiz/submit`, { answers: quizAnswers.value })
+        quizResult.value = { score: data.score, total: data.total, passed: data.passed, percent: data.percent }
+    } catch {
+        // ignore
+    } finally {
+        quizSubmitting.value = false
+    }
+}
+
+async function loadReviews(): Promise<void> {
+    if (!course.value) return
+    try {
+        const { data } = await api.get<{ reviews: Review[]; average: number; count: number }>(`/courses/${course.value.slug}/reviews`)
+        reviews.value = data.reviews ?? []
+        reviewAverage.value = data.average ?? 0
+        reviewCount.value = data.count ?? 0
+    } catch {
+        // ignore
+    }
+}
+
+async function submitReview(): Promise<void> {
+    if (!course.value || !user.value) return
+    reviewSubmitting.value = true
+    try {
+        await api.post(`/courses/${course.value.slug}/reviews`, { rating: reviewRating.value, body: reviewBody.value })
+        reviewBody.value = ''
+        await loadReviews()
+    } catch {
+        // ignore
+    } finally {
+        reviewSubmitting.value = false
+    }
+}
+
+async function toggleWishlist(): Promise<void> {
+    if (!user.value || !course.value) return
+    wishlistLoading.value = true
+    try {
+        const { data } = await api.post<{ wishlisted: boolean }>(`/courses/${course.value.slug}/wishlist`)
+        wishlisted.value = data.wishlisted
+    } catch {
+        // ignore
+    } finally {
+        wishlistLoading.value = false
+    }
+}
 
 const introVideo = computed(() => resolveVideo(course.value?.introVideoUrl))
 
@@ -69,6 +150,8 @@ async function loadCourse(): Promise<void> {
     try {
         const { data } = await api.get<{ course: Course }>(`/courses/${route.params.slug}`)
         course.value = data.course
+        await loadReviews()
+        await loadQuiz()
     } catch (err) {
         const status = (err as { response?: { status?: number } }).response?.status
         if (status === 404) notFound.value = true
@@ -119,6 +202,7 @@ watch(() => route.params.slug, loadCourse)
                             <div class="flex flex-wrap items-center gap-2">
                                 <Badge variant="primary">{{ course.categoryName }}</Badge>
                                 <Badge variant="outline">{{ course.level }}</Badge>
+                                <Badge :variant="course.free ? 'success' : 'secondary'">{{ course.free ? 'Gratis' : 'Premium' }}</Badge>
                             </div>
                             <h1 class="mt-4 text-display-sm font-bold leading-tight tracking-tight">{{ course.title }}</h1>
                             <p class="mt-4 max-w-xl text-body-lg text-on-surface-variant">{{ course.summary }}</p>
@@ -243,6 +327,19 @@ watch(() => route.params.slug, loadCourse)
                             </div>
                             <p class="mt-1 text-body-sm text-on-surface-variant">Akses selamanya setelah pembelian.</p>
 
+                            <button
+                                v-if="user"
+                                type="button"
+                                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant px-4 py-2 text-label-md font-semibold transition-colors hover:border-primary hover:text-primary"
+                                :disabled="wishlistLoading"
+                                @click="toggleWishlist"
+                            >
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                </svg>
+                                {{ wishlistLoading ? 'Menyimpan...' : wishlisted ? 'Hapus dari Favorit' : 'Tambah ke Favorit' }}
+                            </button>
+
                             <RouterLink :to="ctaTarget" class="btn-primary mt-6 w-full">Daftar Sekarang</RouterLink>
                             <RouterLink to="/langganan" class="btn-secondary mt-3 w-full">Lihat Paket Langganan</RouterLink>
 
@@ -260,6 +357,64 @@ watch(() => route.params.slug, loadCourse)
                         </div>
                     </aside>
                 </div>
+            </section>
+
+            <section class="mx-auto max-w-7xl px-4 py-10">
+                <h2 class="text-title-lg font-semibold">Ulasan Kursus ({{ reviewCount }})</h2>
+                <p class="mt-1 text-body-sm text-on-surface-variant">Rata-rata: {{ reviewAverage }} / 5</p>
+
+                <form v-if="user" class="card mt-4 space-y-3" @submit.prevent="submitReview">
+                    <div>
+                        <label class="label">Rating</label>
+                        <select v-model.number="reviewRating" class="mt-1 rounded-xl border border-outline bg-surface px-3 py-2">
+                            <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Ulasan</label>
+                        <textarea v-model="reviewBody" rows="3" class="mt-1 w-full rounded-xl border border-outline bg-surface p-3" placeholder="Tulis ulasanmu..." />
+                    </div>
+                    <button type="submit" class="btn-primary" :disabled="reviewSubmitting">
+                        {{ reviewSubmitting ? 'Mengirim...' : 'Kirim Ulasan' }}
+                    </button>
+                </form>
+
+                <ul class="mt-6 space-y-4">
+                    <li v-for="r in reviews" :key="r.id" class="card">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-on-surface">{{ r.user.name }}</span>
+                            <span class="text-body-sm text-[#F59E0B]">{{ '★'.repeat(r.rating) }}</span>
+                        </div>
+                        <p v-if="r.body" class="mt-2 text-body-md text-on-surface-variant">{{ r.body }}</p>
+                    </li>
+                    <li v-if="reviews.length === 0" class="text-body-sm text-on-surface-variant">Belum ada ulasan.</li>
+                </ul>
+            </section>
+
+            <section v-if="quiz" class="mx-auto max-w-7xl px-4 py-10">
+                <h2 class="text-title-lg font-semibold">{{ quiz.title }}</h2>
+                <p class="mt-1 text-body-sm text-on-surface-variant">Nilai lulus: {{ quiz.passingScore }}%</p>
+
+                <div v-if="quizResult" class="card mt-4">
+                    <p class="text-title-md font-semibold" :class="quizResult.passed ? 'text-tertiary' : 'text-error'">
+                        {{ quizResult.passed ? 'Lulus' : 'Belum lulus' }} — {{ quizResult.score }}/{{ quizResult.total }} ({{ quizResult.percent }}%)
+                    </p>
+                </div>
+
+                <form v-else class="mt-4 space-y-6" @submit.prevent="submitQuiz">
+                    <div v-for="q in quiz.questions" :key="q.id" class="card">
+                        <p class="text-body-md font-semibold text-on-surface">{{ q.question }}</p>
+                        <div class="mt-3 space-y-2">
+                            <label v-for="(opt, idx) in q.options" :key="idx" class="flex items-center gap-2 text-body-md text-on-surface-variant">
+                                <input type="radio" :name="`q-${q.id}`" :value="idx" v-model.number="quizAnswers[q.id]" />
+                                <span>{{ opt }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" :disabled="quizSubmitting">
+                        {{ quizSubmitting ? 'Mengirim...' : 'Kirim Jawaban' }}
+                    </button>
+                </form>
             </section>
 
             <Modal

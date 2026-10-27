@@ -27,6 +27,12 @@ variables:
   currentUserEmail: ""
   currentUserId: ""
   unreadCountBefore: ""
+  resolvedCourseSlug: ""
+  resolvedLessonSlugs: ""
+  discussionId: ""
+  replyId: ""
+  notificationDiscussionId: ""
+  notificationId: ""
 auth:
   type: bearer
   credentials:

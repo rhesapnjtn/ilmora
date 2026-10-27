@@ -248,7 +248,15 @@ onMounted(syncFromQuery)
 
                             <div class="flex flex-1 flex-col p-5 md:p-6">
                                 <div class="mb-3 flex items-center justify-between gap-2">
-                                    <span class="badge-outline">{{ course.level }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="badge-outline">{{ course.level }}</span>
+                                        <span
+                                            class="rounded-full px-2.5 py-1 text-label-sm font-semibold"
+                                            :class="course.free ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary'"
+                                        >
+                                            {{ course.free ? 'Gratis' : 'Premium' }}
+                                        </span>
+                                    </div>
                                     <div class="flex items-center gap-1">
                                         <svg class="h-4 w-4 text-secondary-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                             <path d="M12 2l2.9 6.3 6.9.6-5.2 4.5 1.6 6.7L12 16.9 5.8 20.1l1.6-6.7L2.2 8.9l6.9-.6z" />

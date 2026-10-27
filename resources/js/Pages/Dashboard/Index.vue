@@ -12,6 +12,8 @@ interface ActiveCourse {
     category: string
     module: string
     progress: number
+    completedCount: number
+    totalLessons: number
 }
 
 interface Subscription {
@@ -172,7 +174,22 @@ onMounted(loadDashboard)
                             <RouterLink to="/kursus" class="link text-body-sm">Lihat katalog</RouterLink>
                         </div>
 
-                        <div class="mt-4 space-y-4">
+                        <!-- Empty state for new users -->
+                        <div v-if="data.activeCourses.length === 0" class="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-outline-variant py-14 text-center">
+                            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
+                                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                </svg>
+                            </span>
+                            <p class="mt-4 text-title-md font-semibold text-on-surface">Kamu belum mengikuti kursus apa pun</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">Mulai belajar sekarang dari ratusan kursus terbaik di Ilmora.</p>
+                            <RouterLink to="/kursus" class="btn-primary mt-6 inline-flex items-center gap-2">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                                Jelajahi Katalog Kursus
+                            </RouterLink>
+                        </div>
+
+                        <div v-else class="mt-4 space-y-4">
                             <div v-for="course in data.activeCourses" :key="course.slug" class="card">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
@@ -180,15 +197,15 @@ onMounted(loadDashboard)
                                         <h3 class="mt-3 text-title-md font-semibold">{{ course.title }}</h3>
                                         <p class="mt-1 text-body-sm text-on-surface-variant">{{ course.module }}</p>
                                     </div>
-                                    <RouterLink to="/kursus" class="btn-primary h-10 px-4 text-label-md">Lanjutkan</RouterLink>
+                                    <RouterLink :to="`/kursus/${course.slug}`" class="btn-primary h-10 px-4 text-label-md">Lanjutkan</RouterLink>
                                 </div>
                                 <div class="mt-4">
                                     <div class="flex items-center justify-between text-body-sm text-on-surface-variant">
-                                        <span>Progres</span>
+                                        <span>{{ course.completedCount }} / {{ course.totalLessons }} pelajaran selesai</span>
                                         <span class="font-semibold text-on-surface">{{ course.progress }}%</span>
                                     </div>
                                     <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-                                        <div class="h-full rounded-full bg-primary" :style="{ width: `${course.progress}%` }" />
+                                        <div class="h-full rounded-full bg-primary transition-all duration-500" :style="{ width: `${course.progress}%` }" />
                                     </div>
                                 </div>
                             </div>

@@ -49,6 +49,38 @@ const pointsBalance = ref(0)
 const pointsStreak = ref(0)
 const checkingIn = ref(false)
 const checkinMessage = ref<string | null>(null)
+const justCheckedIn = ref(false)
+
+const nextMilestone = computed(() => {
+    const s = pointsStreak.value
+    if (s < 7) return 7
+    if (s < 30) return 30
+    return 100
+})
+
+const milestoneProgress = computed(() => {
+    const s = pointsStreak.value
+    const prev = s >= 30 ? 30 : s >= 7 ? 7 : 0
+    const next = nextMilestone.value
+    if (next === prev) return 100
+    return Math.min(100, Math.round(((s - prev) / (next - prev)) * 100))
+})
+
+const tomorrowReward = computed(() => {
+    const next = pointsStreak.value + 1
+    let r = 5 + Math.min(next, 30)
+    if (next === 7) r += 20
+    else if (next === 30) r += 100
+    else if (next === 100) r += 500
+    return r
+})
+
+const streakTier = computed(() => {
+    const s = pointsStreak.value
+    if (s >= 30) return { label: 'Emas', color: 'text-amber-500' }
+    if (s >= 7) return { label: 'Perak', color: 'text-slate-400' }
+    return { label: 'Perunggu', color: 'text-orange-600' }
+})
 
 async function loadPoints(): Promise<void> {
     try {
@@ -63,11 +95,16 @@ async function loadPoints(): Promise<void> {
 async function handleCheckin(): Promise<void> {
     checkingIn.value = true
     checkinMessage.value = null
+    justCheckedIn.value = false
     try {
-        const { data: payload } = await api.post<{ message: string; balance: number; streak: number }>('/checkin')
+        const { data: payload } = await api.post<{ message: string; balance: number; streak: number; alreadyCheckedIn: boolean }>('/checkin')
         pointsBalance.value = payload.balance
         pointsStreak.value = payload.streak
         checkinMessage.value = payload.message
+        if (!payload.alreadyCheckedIn) {
+            justCheckedIn.value = true
+            setTimeout(() => { justCheckedIn.value = false }, 2500)
+        }
     } catch (err) {
         const response = (err as { response?: { data?: { message?: string } } }).response
         checkinMessage.value = response?.data?.message ?? 'Gagal check-in.'
@@ -165,17 +202,66 @@ onMounted(() => {
 
                 <template v-else-if="data">
                     <section class="mt-6">
-                        <div class="card flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <h2 class="text-title-md font-semibold">Poin Pembelajaran</h2>
-                                <p class="mt-1 text-body-sm text-on-surface-variant">
-                                    Saldo: <span class="font-semibold text-on-surface">{{ pointsBalance }}</span> poin · Streak: {{ pointsStreak }} hari
-                                </p>
-                                <p v-if="checkinMessage" class="mt-1 text-body-sm text-tertiary">{{ checkinMessage }}</p>
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-rose-500/15 p-6 ring-1 ring-amber-500/20">
+                            <div class="flex flex-wrap items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-3xl shadow-lg shadow-orange-500/30">
+                                        <span class="animate-pulse">🔥</span>
+                                        <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface text-xs font-bold text-orange-600 ring-2 ring-orange-500">
+                                            {{ pointsStreak }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-title-lg font-bold">Streak Pembelajaran</h2>
+                                        <p class="mt-0.5 text-body-sm text-on-surface-variant">
+                                            {{ pointsStreak }} hari berturut-turut · {{ pointsBalance }} poin
+                                        </p>
+                                        <p v-if="checkinMessage" class="mt-1 text-body-sm font-medium text-tertiary">{{ checkinMessage }}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3 text-label-lg font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-orange-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                    :disabled="checkingIn"
+                                    @click="handleCheckin"
+                                >
+                                    <span v-if="justCheckedIn" class="absolute inset-0 animate-ping bg-white/30" />
+                                    {{ checkingIn ? 'Memproses...' : 'Check-in Hari Ini' }}
+                                </button>
                             </div>
-                            <button type="button" class="btn-primary" :disabled="checkingIn" @click="handleCheckin">
-                                {{ checkingIn ? 'Memproses...' : 'Check-in Hari Ini' }}
-                            </button>
+
+                            <div class="mt-5">
+                                <div class="flex items-center justify-between text-label-sm text-on-surface-variant">
+                                    <span>Progress ke {{ nextMilestone }} hari</span>
+                                    <span>{{ milestoneProgress }}%</span>
+                                </div>
+                                <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container-high">
+                                    <div
+                                        class="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-700"
+                                        :style="{ width: milestoneProgress + '%' }"
+                                    />
+                                </div>
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <span
+                                        v-for="m in [7, 30, 100]"
+                                        :key="m"
+                                        class="rounded-full px-3 py-1 text-label-sm font-semibold transition-all"
+                                        :class="pointsStreak >= m
+                                            ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/40'
+                                            : 'bg-surface-container-high text-on-surface-variant'"
+                                    >
+                                        {{ pointsStreak >= m ? '✓' : '○' }} {{ m }} hari
+                                        <span class="ml-1 opacity-70">
+                                            +{{ m === 7 ? 20 : m === 30 ? 100 : 500 }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap items-center gap-3 text-body-sm text-on-surface-variant">
+                                <span>Besok kamu bisa dapat <span class="font-semibold text-amber-600">+{{ tomorrowReward }} poin</span> jika check-in.</span>
+                                <span class="rounded-full bg-surface/60 px-3 py-1 text-label-sm">Tier: {{ streakTier.label }}</span>
+                            </div>
                         </div>
                     </section>
 

@@ -27,7 +27,7 @@ class ChatController extends Controller
 
     public function topics(Request $request): JsonResponse
     {
-        return response()->json(['topics' => self::topics()]);
+        return response()->json(['topics' => self::availableTopics()]);
     }
 
     public function index(Request $request): JsonResponse

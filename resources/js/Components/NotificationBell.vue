@@ -10,9 +10,12 @@ interface NotificationItem {
     data: {
         type?: string
         author_name?: string
+        sender_name?: string
         excerpt?: string
         lesson_title?: string
         url?: string | null
+        conversation_id?: number
+        message_id?: number
     }
     readAt: string | null
     createdAt: string
@@ -168,13 +171,14 @@ function formatRelative(value: string | null | undefined): string {
                                 />
                                 <span class="min-w-0 flex-1">
                                     <span class="block text-body-md font-semibold text-on-surface">
-                                        {{ item.data.author_name || 'Seseorang' }} membalas diskusimu
+                                        {{ item.data.type === 'chat_message' ? (item.data.sender_name || 'CS') : (item.data.author_name || 'Seseorang') }}
+                                        {{ item.data.type === 'chat_message' ? 'membalas chat-mu' : 'membalas diskusimu' }}
                                     </span>
                                     <span class="mt-0.5 block truncate text-body-sm text-on-surface-variant">
                                         {{ item.data.excerpt }}
                                     </span>
                                     <span class="mt-1 block text-body-sm text-on-surface-variant">
-                                        {{ item.data.lesson_title }} · {{ formatRelative(item.createdAt) }}
+                                        {{ item.data.lesson_title || formatRelative(item.createdAt) }}
                                     </span>
                                 </span>
                             </button>

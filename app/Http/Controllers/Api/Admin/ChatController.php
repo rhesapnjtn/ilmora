@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChatAttachment;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
@@ -67,6 +69,7 @@ class ChatController extends Controller
         $conversation->update([
             'cs_user_id' => $conversation->cs_user_id ?? $cs->id,
             'last_message_at' => now(),
+            'cs_typing_at' => null,
         ]);
 
         $conversation->user?->notify(new ChatMessageNotification($message, $conversation));
@@ -92,6 +95,10 @@ class ChatController extends Controller
         return response()->json([
             'messages' => $messages,
             'status' => $conversation->status,
+            'typing' => [
+                'cs' => $conversation->isCSTyping(),
+                'user' => $conversation->isUserTyping(),
+            ],
         ]);
     }
 
@@ -117,6 +124,8 @@ class ChatController extends Controller
 
     private function presentMessage(ChatMessage $message): array
     {
+        $message->loadMissing(['sender', 'attachments']);
+
         return [
             'id' => $message->id,
             'senderId' => $message->sender_id,
@@ -125,6 +134,13 @@ class ChatController extends Controller
             'body' => $message->body,
             'read' => $message->read_at !== null,
             'createdAt' => $message->created_at?->toIso8601String(),
+            'attachments' => $message->attachments->map(fn (ChatAttachment $a): array => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'url' => Storage::url($a->path),
+                'mimeType' => $a->mime_type,
+                'size' => $a->size,
+            ])->all(),
         ];
     }
 
@@ -151,6 +167,8 @@ class ChatController extends Controller
             'lastMessageAt' => $conversation->last_message_at?->toIso8601String(),
             'unreadCount' => $unread,
             'createdAt' => $conversation->created_at?->toIso8601String(),
+            'userTyping' => $conversation->isUserTyping(),
+            'csTyping' => $conversation->isCSTyping(),
         ];
 
         if ($withMessages) {

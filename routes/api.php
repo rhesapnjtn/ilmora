@@ -132,6 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chat/conversations', [ChatController::class, 'store']);
     Route::get('/chat/conversations/{conversation}', [ChatController::class, 'show']);
     Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
+    Route::post('/chat/conversations/{conversation}/attachments', [ChatController::class, 'uploadAttachment']);
+    Route::post('/chat/conversations/{conversation}/typing', [ChatController::class, 'typing']);
+    Route::post('/chat/conversations/{conversation}/stop-typing', [ChatController::class, 'stopTyping']);
     Route::get('/chat/conversations/{conversation}/poll', [ChatController::class, 'poll']);
     Route::post('/chat/conversations/{conversation}/close', [ChatController::class, 'close']);
 });
@@ -139,6 +142,14 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', AdminDashboardController::class);
 
+    Route::get('/chat/conversations', [AdminChatController::class, 'index']);
+    Route::get('/chat/conversations/{conversation}', [AdminChatController::class, 'show']);
+    Route::post('/chat/conversations/{conversation}/messages', [AdminChatController::class, 'sendMessage']);
+    Route::post('/chat/conversations/{conversation}/attachments', [ChatController::class, 'uploadAttachment']);
+    Route::post('/chat/conversations/{conversation}/typing', [ChatController::class, 'typing']);
+    Route::post('/chat/conversations/{conversation}/stop-typing', [ChatController::class, 'stopTyping']);
+    Route::get('/chat/conversations/{conversation}/poll', [AdminChatController::class, 'poll']);
+    Route::post('/chat/conversations/{conversation}/close', [AdminChatController::class, 'close']);
     Route::get('/categories', [AdminCategoryController::class, 'index']);
     Route::post('/categories', [AdminCategoryController::class, 'store']);
     Route::get('/categories/{category}', [AdminCategoryController::class, 'show']);

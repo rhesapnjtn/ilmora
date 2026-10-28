@@ -20,12 +20,16 @@ class ChatConversation extends Model
         'subject',
         'status',
         'last_message_at',
+        'user_typing_at',
+        'cs_typing_at',
     ];
 
     protected function casts(): array
     {
         return [
             'last_message_at' => 'datetime',
+            'user_typing_at' => 'datetime',
+            'cs_typing_at' => 'datetime',
         ];
     }
 
@@ -49,8 +53,13 @@ class ChatConversation extends Model
         return $this->hasMany(ChatMessage::class, 'conversation_id')->latest('created_at')->limit(1);
     }
 
-    public function isOpen(): bool
+    public function isUserTyping(): bool
     {
-        return $this->status === 'open';
+        return $this->user_typing_at !== null && $this->user_typing_at->diffInSeconds(now()) < 5;
+    }
+
+    public function isCSTyping(): bool
+    {
+        return $this->cs_typing_at !== null && $this->cs_typing_at->diffInSeconds(now()) < 5;
     }
 }

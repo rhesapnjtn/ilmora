@@ -6,7 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChatMessage extends Model
 {
@@ -26,9 +26,9 @@ class ChatMessage extends Model
         ];
     }
 
-    public function conversation(): BelongsTo
+    public function attachments(): HasMany
     {
-        return $this->belongsTo(ChatConversation::class, 'conversation_id');
+        return $this->hasMany(ChatAttachment::class, 'message_id');
     }
 
     public function sender(): BelongsTo

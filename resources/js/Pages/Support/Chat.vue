@@ -5,6 +5,7 @@ import Button from '@/Components/Button.vue'
 import api from '@/lib/api'
 import { normalizeApiError } from '@/lib/errors'
 
+interface ChatAttachment { id: number; name: string; url: string; mimeType: string | null; size: number | null }
 interface ChatMessage {
     id: number
     senderId: number
@@ -13,6 +14,7 @@ interface ChatMessage {
     body: string
     read: boolean
     createdAt: string | null
+    attachments?: ChatAttachment[]
 }
 
 interface Conversation {
@@ -47,6 +49,10 @@ const creating = ref(false)
 const draft = ref('')
 const sending = ref(false)
 const polling = ref<number | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
+const typing = ref({ user: false, cs: false })
+let typingTimeout: number | null = null
 
 async function loadTopics(): Promise<void> {
     try {
@@ -92,11 +98,12 @@ function startPolling(): void {
         if (!active.value) return
         const lastId = active.value.messages?.length ? active.value.messages[active.value.messages.length - 1].id : 0
         try {
-            const { data } = await api.get<{ messages: ChatMessage[]; status: string }>(`/chat/conversations/${active.value.id}/poll`, { params: { after: lastId } })
+            const { data } = await api.get<{ messages: ChatMessage[]; status: string; typing?: { cs: boolean; user: boolean } }>(`/chat/conversations/${active.value.id}/poll`, { params: { after: lastId } })
             if (data.messages.length) {
                 active.value.messages = [...(active.value.messages ?? []), ...data.messages]
             }
             active.value.status = data.status as 'open' | 'closed'
+            if (data.typing) typing.value = { user: !!data.typing.user, cs: !!data.typing.cs }
         } catch {
             // ignore transient errors
         }
@@ -145,6 +152,38 @@ async function sendDraft(): Promise<void> {
         error.value = normalizeApiError(err).message ?? 'Gagal mengirim pesan.'
     } finally {
         sending.value = false
+    }
+}
+
+function onTyping(): void {
+    if (!active.value) return
+    if (typingTimeout) clearTimeout(typingTimeout)
+    api.post(`/chat/conversations/${active.value.id}/typing`).catch(() => {})
+    typingTimeout = window.setTimeout(() => {
+        if (active.value) api.post(`/chat/conversations/${active.value.id}/stop-typing`).catch(() => {})
+    }, 2000)
+}
+
+function triggerUpload(): void {
+    fileInput.value?.click()
+}
+
+async function handleFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file || !active.value) return
+    uploading.value = true
+    error.value = null
+    try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const { data } = await api.post<{ chatMessage: ChatMessage }>(`/chat/conversations/${active.value.id}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        active.value.messages = [...(active.value.messages ?? []), data.chatMessage]
+    } catch (err) {
+        error.value = normalizeApiError(err).message ?? 'Gagal mengunggah file.'
+    } finally {
+        uploading.value = false
+        input.value = ''
     }
 }
 
@@ -266,10 +305,17 @@ onUnmounted(stopPolling)
                                 >
                                     <p class="text-label-sm font-semibold opacity-80">{{ m.senderName }}{{ m.isAdmin ? ' (CS)' : '' }}</p>
                                     <p class="mt-1 whitespace-pre-wrap">{{ m.body }}</p>
+                                    <div v-if="m.attachments?.length" class="mt-2 space-y-1">
+                                        <a v-for="a in m.attachments" :key="a.id" :href="a.url" target="_blank" class="block rounded-lg bg-white/10 px-3 py-2 text-label-sm underline-offset-2 hover:underline">
+                                            📎 {{ a.name }} <span v-if="a.size" class="opacity-70">({{ Math.round(a.size / 1024) }} KB)</span>
+                                        </a>
+                                    </div>
                                     <p class="mt-1 text-label-sm opacity-60">{{ new Date(m.createdAt ?? '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}</p>
                                 </div>
                             </div>
                         </div>
+
+                        <p v-if="typing.cs" class="mt-2 text-label-sm italic text-on-surface-variant">CS sedang mengetik...</p>
 
                         <form v-if="active.status === 'open'" class="mt-4 flex items-end gap-2 border-t border-outline-variant/40 pt-4" @submit.prevent="sendDraft">
                             <textarea
@@ -278,8 +324,13 @@ onUnmounted(stopPolling)
                                 class="input min-h-16 flex-1 py-2"
                                 placeholder="Tulis pesan..."
                                 @keydown.enter.exact.prevent="sendDraft"
+                                @input="onTyping"
                             />
+                            <button type="button" class="btn-secondary h-10 w-10 shrink-0 px-0" :disabled="uploading || !active" @click="triggerUpload" title="Lampirkan file">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                            </button>
                             <Button type="submit" :loading="sending" :disabled="sending || !draft.trim()">Kirim</Button>
+                            <input ref="fileInput" type="file" class="hidden" accept="image/*,application/pdf,text/plain,.doc,.docx" @change="handleFile" />
                         </form>
                         <p v-else class="mt-4 text-center text-body-sm text-on-surface-variant">Percakapan ini sudah ditutup.</p>
                     </template>

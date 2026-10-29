@@ -65,4 +65,15 @@ class SubscriptionController extends Controller
             ],
         ]);
     }
+
+    public function cancel(Subscription $subscription): JsonResponse
+    {
+        if ($subscription->status === 'canceled') {
+            return response()->json(['message' => 'Langganan sudah dibatalkan.'], 422);
+        }
+
+        $subscription->update(['status' => 'canceled']);
+
+        return response()->json(['message' => 'Langganan berhasil dibatalkan.']);
+    }
 }

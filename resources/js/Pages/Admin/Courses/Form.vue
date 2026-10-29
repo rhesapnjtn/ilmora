@@ -20,6 +20,7 @@ interface Lesson {
     videoUrl: string | null
     order: number
     isFree: boolean
+    isPreview: boolean
 }
 
 const route = useRoute()
@@ -65,7 +66,7 @@ const form = reactive({
 const lessonModalOpen = ref(false)
 const editingLesson = ref<Lesson | null>(null)
 const lessonSaving = ref(false)
-const lessonForm = reactive({ title: '', module: '', duration: '', video_url: '', order: 0, is_free: false })
+const lessonForm = reactive({ title: '', module: '', duration: '', video_url: '', order: 0, is_free: false, is_preview: false })
 const videoFile = ref<File | null>(null)
 const videoUploading = ref(false)
 const videoRemoving = ref(false)
@@ -118,6 +119,7 @@ async function loadCourse(): Promise<void> {
             intro_video_url: c.introVideoUrl ?? '',
             popular: c.popular ?? false,
             is_free: c.isFree ?? false,
+    is_preview: c.isPreview ?? false,
             published: c.published ?? false,
             learnText: (c.learn ?? []).join('\n'),
             includesText: (c.includes ?? []).join('\n'),
@@ -198,6 +200,7 @@ function openLessonModal(lesson?: Lesson): void {
     lessonForm.video_url = lesson?.videoUrl ?? ''
     lessonForm.order = lesson?.order ?? lessons.value.length + 1
     lessonForm.is_free = lesson?.isFree ?? false
+    lessonForm.is_preview = lesson?.isPreview ?? false
     lessonModalOpen.value = true
 }
 
@@ -428,8 +431,12 @@ onMounted(() => {
                             </div>
                             <div class="flex items-center gap-2">
                                 <Badge v-if="lesson.isFree" variant="success" size="sm">Pratinjau</Badge>
-                                <button type="button" class="btn-secondary h-9 rounded-lg px-3 text-label-md" @click="openLessonModal(lesson)">Edit</button>
-                                <button type="button" class="h-9 rounded-lg px-3 text-label-md font-semibold text-error transition-colors hover:bg-error/10" @click="askDeleteLesson(lesson)">Hapus</button>
+                                <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary" @click="openLessonModal(lesson)" title="Edit" aria-label="Edit">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                </button>
+                                <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error/10" @click="askDeleteLesson(lesson)" title="Hapus" aria-label="Hapus">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                                </button>
                             </div>
                         </li>
                     </ul>
@@ -500,7 +507,11 @@ onMounted(() => {
                 </div>
                 <label class="flex items-center gap-3 text-body-md">
                     <input v-model="lessonForm.is_free" type="checkbox" class="h-5 w-5 rounded text-primary" />
-                    Jadikan pelajaran pratinjau gratis
+                    Jadikan pelajaran gratis (akses tanpa langganan)
+                </label>
+                <label class="flex items-center gap-3 text-body-md">
+                    <input v-model="lessonForm.is_preview" type="checkbox" class="h-5 w-5 rounded text-primary" />
+                    Jadikan pelajaran preview (tampil di katalog)
                 </label>
             </div>
             <template #footer>

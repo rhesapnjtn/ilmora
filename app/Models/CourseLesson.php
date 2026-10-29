@@ -29,6 +29,7 @@ class CourseLesson extends Model
         'video_url',
         'order',
         'is_free',
+        'is_preview',
     ];
 
     /**
@@ -39,6 +40,7 @@ class CourseLesson extends Model
         return [
             'order' => 'integer',
             'is_free' => 'boolean',
+            'is_preview' => 'boolean',
             'materials' => 'array',
         ];
     }

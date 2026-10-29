@@ -48,6 +48,7 @@ class StoreLessonRequest extends FormRequest
             'video_url' => ['nullable', 'url', 'max:2048'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_free' => ['nullable', 'boolean'],
+            'is_preview' => ['nullable', 'boolean'],
             'materials' => ['nullable', 'array'],
             'materials.*.label' => ['required_with:materials', 'string', 'max:255'],
             'materials.*.size' => ['nullable', 'string', 'max:50'],

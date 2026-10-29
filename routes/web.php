@@ -20,4 +20,4 @@ Route::get('/{any?}', function () {
     return response()
         ->view('app')
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
-})->where('any', '^(?!up$|storage|api|build).*')->name('spa');
+})->where('any', '^(?!up$|storage|api|build|docs).*')->name('spa');

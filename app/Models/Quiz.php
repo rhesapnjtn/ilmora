@@ -10,7 +10,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Quiz extends Model
 {
-    protected $fillable = ['course_id', 'title', 'passing_score'];
+    protected $fillable = ['course_id', 'title', 'passing_score', 'shuffle_questions', 'shuffle_options', 'max_attempts', 'time_limit_minutes'];
+
+    protected function casts(): array
+    {
+        return [
+            'shuffle_questions' => 'boolean',
+            'shuffle_options' => 'boolean',
+            'max_attempts' => 'integer',
+            'time_limit_minutes' => 'integer',
+        ];
+    }
 
     public function course(): BelongsTo
     {

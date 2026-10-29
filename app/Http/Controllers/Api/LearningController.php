@@ -47,7 +47,8 @@ class LearningController extends Controller
         $user = $request->user();
 
         $isFree = (bool) $current->is_free;
-        $hasAccess = $isFree || ($user !== null && $user->hasAccessToCourse($course));
+        $isPreview = (bool) $current->is_preview;
+        $hasAccess = $isFree || $isPreview || ($user !== null && $user->hasAccessToCourse($course));
 
         if (! $hasAccess) {
             $hasActiveSubscription = $user !== null && $user->hasActiveSubscription();
@@ -110,6 +111,7 @@ class LearningController extends Controller
                 'title' => $current->title,
                 'duration' => $current->duration ?? '00:00',
                 'free' => (bool) $current->is_free,
+                'preview' => (bool) $current->is_preview,
                 'module' => $current->module,
                 'index' => $index + 1,
                 'total' => $lessons->count(),
@@ -125,6 +127,7 @@ class LearningController extends Controller
                 'duration' => $item->duration ?? '00:00',
                 'module' => $item->module,
                 'free' => (bool) $item->is_free,
+                'preview' => (bool) $item->is_preview,
                 'completed' => in_array($item->id, $completedLessonIds, true),
             ])->all(),
             'prev' => $index > 0 ? $lessons[$index - 1]->slug : null,
@@ -158,7 +161,8 @@ class LearningController extends Controller
         }
 
         $isFree = (bool) $currentLesson->is_free;
-        $hasAccess = $isFree || $user->hasAccessToCourse($course);
+        $isPreview = (bool) $currentLesson->is_preview;
+        $hasAccess = $isFree || $isPreview || $user->hasAccessToCourse($course);
 
         if (! $hasAccess) {
             $hasActiveSubscription = $user->hasActiveSubscription();

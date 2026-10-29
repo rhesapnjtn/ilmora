@@ -23,6 +23,9 @@ interface PopularCourse {
 const router = useRouter()
 
 const popularCourses = ref<PopularCourse[]>([])
+const loadingPopular = ref(true)
+const popularError = ref<string | null>(null)
+const coursesCount = ref<number | null>(null)
 const heroQuery = ref('')
 
 const popularKeywords = ['Laravel', 'Figma UI/UX', 'Python AI', 'Digital Ads']
@@ -90,11 +93,17 @@ function searchFor(keyword: string): void {
 }
 
 async function loadPopular(): Promise<void> {
+    loadingPopular.value = true
+    popularError.value = null
     try {
         const { data } = await api.get<{ courses: PopularCourse[] }>('/courses')
         popularCourses.value = data.courses.slice(0, 3)
+        coursesCount.value = data.courses.length
     } catch {
         popularCourses.value = []
+        popularError.value = 'Gagal memuat kursus populer.'
+    } finally {
+        loadingPopular.value = false
     }
 }
 
@@ -174,13 +183,13 @@ onMounted(loadPopular)
 
                         <div class="mt-10 flex items-center gap-8 pt-8 sm:gap-10">
                             <div>
-                                <p class="text-headline-lg font-bold text-on-surface">120K+</p>
-                                <p class="text-body-sm text-on-surface-variant">Siswa Terdaftar</p>
+                                <p class="text-headline-lg font-bold text-on-surface">{{ coursesCount ?? '—' }}+</p>
+                                <p class="text-body-sm text-on-surface-variant">Kursus Tersedia</p>
                             </div>
                             <div class="h-10 w-px bg-surface-container-high" />
                             <div>
-                                <p class="text-headline-lg font-bold text-on-surface">350+</p>
-                                <p class="text-body-sm text-on-surface-variant">Kursus Praktik</p>
+                                <p class="text-headline-lg font-bold text-on-surface">4.9 / 5.0</p>
+                                <p class="text-body-sm text-on-surface-variant">Rating Mentor</p>
                             </div>
                             <div class="h-10 w-px bg-surface-container-high" />
                             <div class="flex items-center gap-2">
@@ -190,8 +199,8 @@ onMounted(loadPopular)
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-headline-md font-bold text-on-surface">4.9 / 5.0</p>
-                                    <p class="text-body-sm text-on-surface-variant">Ulasan Mentor</p>
+                                    <p class="text-headline-md font-bold text-on-surface">100%</p>
+                                    <p class="text-body-sm text-on-surface-variant">Akses Fleksibel</p>
                                 </div>
                             </div>
                         </div>
@@ -210,7 +219,7 @@ onMounted(loadPopular)
                                     </div>
                                     <div>
                                         <p class="text-label-md font-bold leading-tight text-on-surface">Sesi Live Interaktif</p>
-                                        <p class="text-body-sm font-semibold text-tertiary">Sedang berlangsung &bull; 842 Peserta</p>
+                                        <p class="text-body-sm font-semibold text-tertiary">Contoh tampilan &bull; Sesi interaktif</p>
                                     </div>
                                 </div>
                                 <span class="rounded-full bg-tertiary px-2.5 py-1 text-label-sm font-bold uppercase text-white">Online</span>
@@ -315,7 +324,7 @@ onMounted(loadPopular)
             </div>
         </section>
 
-        <section v-if="popularCourses.length > 0" class="mx-auto w-full max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
+        <section v-if="loadingPopular || popularCourses.length > 0 || popularError" class="mx-auto w-full max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
             <div class="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                     <div class="mb-2 flex items-center gap-2">
@@ -332,7 +341,13 @@ onMounted(loadPopular)
                 </RouterLink>
             </div>
 
-            <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div v-if="popularError" class="rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ popularError }}</div>
+
+            <div v-else-if="loadingPopular" class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <div v-for="i in 3" :key="i" class="h-80 animate-pulse rounded-2xl bg-surface-container-high" />
+            </div>
+
+            <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 <article v-for="(course, index) in popularCourses" :key="course.slug" class="card-flush card-hover group flex flex-col">
                     <CourseCover
                         :category-name="course.categoryName"
@@ -383,6 +398,36 @@ onMounted(loadPopular)
                         </div>
                     </div>
                 </article>
+            </div>
+        </section>
+
+        <section class="mx-auto w-full max-w-7xl px-4 py-10 lg:px-8 lg:py-16">
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div class="rounded-2xl bg-surface-container-lowest p-6 shadow-card">
+                    <h2 class="text-headline-sm font-bold text-on-surface">Belajar sambil kumpulkan poin</h2>
+                    <p class="mt-2 text-body-md text-on-surface-variant">Check-in harian, selesaikan pelajaran, dan tukar poin untuk akses kursus premium.</p>
+                    <ul class="mt-4 space-y-2 text-body-sm text-on-surface-variant">
+                        <li>• Check-in harian memberi poin dan streak.</li>
+                        <li>• Selesaikan pelajaran untuk poin tambahan.</li>
+                        <li>• Tukar poin untuk kursus yang mendukung redeem.</li>
+                    </ul>
+                    <RouterLink to="/dashboard" class="btn-primary mt-4 inline-flex">Lihat Poin Saya</RouterLink>
+                </div>
+                <div class="rounded-2xl bg-surface-container-lowest p-6 shadow-card">
+                    <h2 class="text-headline-sm font-bold text-on-surface">Pertanyaan Umum</h2>
+                    <details class="mt-3">
+                        <summary class="cursor-pointer text-body-md font-semibold">Apakah ada kursus gratis?</summary>
+                        <p class="mt-2 text-body-sm text-on-surface-variant">Ya, beberapa kursus dapat diakses gratis.</p>
+                    </details>
+                    <details class="mt-3">
+                        <summary class="cursor-pointer text-body-md font-semibold">Bagaimana cara mendapatkan poin?</summary>
+                        <p class="mt-2 text-body-sm text-on-surface-variant">Melalui check-in harian dan menyelesaikan pelajaran.</p>
+                    </details>
+                    <details class="mt-3">
+                        <summary class="cursor-pointer text-body-md font-semibold">Apakah sertifikat bisa diverifikasi?</summary>
+                        <p class="mt-2 text-body-sm text-on-surface-variant">Ya, setiap sertifikat memiliki kode unik untuk verifikasi.</p>
+                    </details>
+                </div>
             </div>
         </section>
 

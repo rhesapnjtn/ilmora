@@ -122,8 +122,12 @@ onMounted(load)
                         </td>
                         <td class="px-5 py-4">
                             <div class="flex items-center justify-end gap-2">
-                                <RouterLink :to="`/admin/paket/${plan.id}/edit`" class="btn-secondary h-9 rounded-lg px-3 text-label-md">Edit</RouterLink>
-                                <button type="button" class="h-9 rounded-lg px-3 text-label-md font-semibold text-error transition-colors hover:bg-error/10" @click="askDelete(plan)">Hapus</button>
+                                <RouterLink :to="`/admin/paket/${plan.id}/edit`" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary" title="Edit" aria-label="Edit">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                </RouterLink>
+                                <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error/10" @click="askDelete(plan)" title="Hapus" aria-label="Hapus">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                                </button>
                             </div>
                         </td>
                     </tr>

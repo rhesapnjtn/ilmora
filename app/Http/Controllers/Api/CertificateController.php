@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Support\DemoCatalog;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class CertificateController extends Controller
 {
@@ -53,6 +55,53 @@ class CertificateController extends Controller
         }
 
         return response()->json(['message' => 'Sertifikat tidak ditemukan.'], 404);
+    }
+
+    public function download(Request $request, string $id): Response
+    {
+        $certificate = Certificate::query()
+            ->with('course', 'user')
+            ->where('code', $id)
+            ->orWhere('id', $id)
+            ->first();
+
+        if ($certificate !== null) {
+            $data = $this->present($certificate);
+            $recipient = $certificate->user?->name ?? $request->user()?->name ?? 'Peserta Ilmora';
+
+            $pdf = Pdf::loadView('certificates.pdf', [
+                'recipient' => $recipient,
+                'courseTitle' => $data['courseTitle'] ?? 'Kursus',
+                'level' => $data['level'] ?? '-',
+                'hours' => $data['hours'] ?? 0,
+                'instructor' => $data['instructor'] ?? '-',
+                'issuedAt' => $data['issuedAt'] ?? now()->toDateString(),
+                'code' => $data['code'],
+                'verifyUrl' => url('/api/certificates/verify/'.$data['code']),
+            ]);
+
+            return $pdf->download('sertifikat-'.$data['code'].'.pdf');
+        }
+
+        $demo = DemoCatalog::findCertificate($id);
+
+        if ($demo !== null) {
+            $recipient = $request->user()?->name ?? 'Peserta Ilmora';
+            $pdf = Pdf::loadView('certificates.pdf', [
+                'recipient' => $recipient,
+                'courseTitle' => $demo['courseTitle'] ?? 'Kursus',
+                'level' => $demo['level'] ?? '-',
+                'hours' => $demo['hours'] ?? 0,
+                'instructor' => $demo['instructor'] ?? '-',
+                'issuedAt' => $demo['issuedAt'] ?? now()->toDateString(),
+                'code' => $demo['code'] ?? $id,
+                'verifyUrl' => url('/api/certificates/verify/'.($demo['code'] ?? $id)),
+            ]);
+
+            return $pdf->download('sertifikat-'.($demo['code'] ?? $id).'.pdf');
+        }
+
+        abort(404, 'Sertifikat tidak ditemukan.');
     }
 
     public function verify(string $code): JsonResponse

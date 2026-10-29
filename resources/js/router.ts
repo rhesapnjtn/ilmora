@@ -107,6 +107,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Dashboard', requiresAuth: true },
     },
     {
+        path: '/bantuan/chat',
+        name: 'support-chat',
+        component: () => import('@/Pages/Support/Chat.vue'),
+        meta: { title: 'Bantuan & Chat CS', requiresAuth: true },
+    },
+    {
         path: '/profile',
         name: 'profile',
         component: () => import('@/Pages/Profile/Edit.vue'),
@@ -183,10 +189,28 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Kelola Pembayaran', requiresAuth: true, requiresAdmin: true },
     },
     {
+        path: '/admin/chat',
+        name: 'admin-chat',
+        component: () => import('@/Pages/Admin/Chat/Index.vue'),
+        meta: { title: 'Chat Customer Service', requiresAuth: true, requiresAdmin: true },
+    },
+    {
         path: '/admin/ulasan',
         name: 'admin-reviews',
         component: () => import('@/Pages/Admin/Reviews/Index.vue'),
         meta: { title: 'Moderasi Ulasan', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/analitik',
+        name: 'admin-analytics',
+        component: () => import('@/Pages/Admin/Analytics/Index.vue'),
+        meta: { title: 'Analitik', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/pengaturan',
+        name: 'admin-settings',
+        component: () => import('@/Pages/Admin/Settings/Index.vue'),
+        meta: { title: 'Pengaturan Sistem', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/kebijakan-privasi',

@@ -8,7 +8,7 @@ import Modal from '@/Components/Modal.vue'
 import api from '@/lib/api'
 import { resolveVideo } from '@/lib/video'
 
-interface Lesson { id: string; title: string; duration: string; free: boolean }
+interface Lesson { id: string; title: string; duration: string; free: boolean; preview?: boolean }
 interface Module { title: string; lessons: Lesson[] }
 interface Course {
     slug: string
@@ -307,6 +307,7 @@ watch(() => route.params.slug, loadCourse)
                                             </svg>
                                             <span class="flex-1 text-body-md text-on-surface-variant">{{ lesson.title }}</span>
                                             <span v-if="lesson.free" class="badge-primary">Pratinjau</span>
+                                            <span v-if="lesson.preview && !lesson.free" class="badge-outline">Preview Gratis</span>
                                             <span class="text-body-sm text-on-surface-variant">{{ lesson.duration }}</span>
                                         </li>
                                     </ul>

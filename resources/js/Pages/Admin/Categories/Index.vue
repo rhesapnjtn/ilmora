@@ -115,7 +115,9 @@ onMounted(load)
                         <td class="px-5 py-4 text-body-md font-semibold text-on-surface">{{ c.name }}</td>
                         <td class="px-5 py-4 text-body-sm text-on-surface-variant">{{ c.slug }}</td>
                         <td class="px-5 py-4 text-right">
-                            <button type="button" class="h-9 rounded-lg px-3 text-label-md font-semibold text-error hover:bg-error/10" @click="askDelete(c)">Hapus</button>
+                            <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error/10" @click="askDelete(c)" title="Hapus" aria-label="Hapus">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                                </button>
                         </td>
                     </tr>
                 </tbody>

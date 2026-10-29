@@ -31,6 +31,33 @@ const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 
 const editOpen = ref(false)
+const createOpen = ref(false)
+const createForm = reactive({ name: '', email: '', password: '', role: 'admin' })
+const createError = ref<string | null>(null)
+const savingCreate = ref(false)
+
+function openCreate(): void {
+    createForm.name = ''
+    createForm.email = ''
+    createForm.password = ''
+    createForm.role = 'admin'
+    createError.value = null
+    createOpen.value = true
+}
+
+async function saveCreate(): Promise<void> {
+    savingCreate.value = true
+    createError.value = null
+    try {
+        await api.post('/admin/users', createForm)
+        createOpen.value = false
+        await load(meta.value.page)
+    } catch (e: any) {
+        createError.value = e?.response?.data?.message ?? 'Gagal membuat pengguna.'
+    } finally {
+        savingCreate.value = false
+    }
+}
 const saving = ref(false)
 const target = ref<AdminUser | null>(null)
 const editForm = reactive({ name: '', role: 'user' })
@@ -131,6 +158,10 @@ onMounted(() => load(1))
         <p v-if="error" class="mt-4 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ error }}</p>
         <p v-if="notice" class="mt-4 rounded-2xl bg-tertiary/10 px-4 py-3 text-body-sm text-tertiary" role="status">{{ notice }}</p>
 
+<div class="mt-4 flex justify-end">
+            <Button size="sm" @click="openCreate">+ Tambah Pengguna</Button>
+        </div>
+
         <div class="card-flush mt-6 overflow-x-auto">
             <table class="w-full min-w-[720px] text-left">
                 <thead>
@@ -163,14 +194,18 @@ onMounted(() => load(1))
                         <td class="px-5 py-4 text-body-sm text-on-surface-variant">{{ formatDate(user.createdAt) }}</td>
                         <td class="px-5 py-4">
                             <div class="flex items-center justify-end gap-2">
-                                <button type="button" class="btn-secondary h-9 rounded-lg px-3 text-label-md" @click="openEdit(user)">Edit</button>
+                                <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary" @click="openEdit(user)" title="Edit" aria-label="Edit">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                </button>
                                 <button
                                     type="button"
-                                    class="h-9 rounded-lg px-3 text-label-md font-semibold text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-40"
                                     :disabled="user.id === currentUser?.id"
                                     @click="askDelete(user)"
+                                    title="Hapus"
+                                    aria-label="Hapus"
                                 >
-                                    Hapus
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
                                 </button>
                             </div>
                         </td>
@@ -197,6 +232,28 @@ onMounted(() => load(1))
                 <div class="flex justify-end gap-3">
                     <Button variant="secondary" size="sm" @click="editOpen = false">Batal</Button>
                     <Button size="sm" :loading="saving" @click="saveEdit">Simpan</Button>
+                </div>
+            </template>
+        </Modal>
+
+<Modal v-model="createOpen" title="Tambah Pengguna" size="sm">
+            <div class="space-y-4">
+                <Input v-model="createForm.name" label="Nama" required />
+                <Input v-model="createForm.email" label="Email" type="email" required />
+                <Input v-model="createForm.password" label="Kata Sandi" type="password" required />
+                <div>
+                    <label class="label" for="create-role">Peran</label>
+                    <select id="create-role" v-model="createForm.role" class="input">
+                        <option value="user">Pengguna</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <p v-if="createError" class="text-body-sm text-error" role="alert">{{ createError }}</p>
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <Button variant="secondary" size="sm" @click="createOpen = false">Batal</Button>
+                    <Button size="sm" :loading="savingCreate" @click="saveCreate">Simpan</Button>
                 </div>
             </template>
         </Modal>

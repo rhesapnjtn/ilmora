@@ -11,10 +11,11 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
-public function store(StoreUserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
         $data = $request->validated();
         $user = User::create([
@@ -115,7 +116,7 @@ public function store(StoreUserRequest $request): JsonResponse
         return User::query()->where('role', 'admin')->count();
     }
 
-    public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(): StreamedResponse
     {
         $users = User::query()->latest()->get();
 

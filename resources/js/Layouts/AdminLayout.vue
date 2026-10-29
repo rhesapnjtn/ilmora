@@ -24,6 +24,9 @@ const navItems = [
     { label: 'Langganan', to: '/admin/langganan', match: '/admin/langganan', icon: 'card' },
     { label: 'Pembayaran', to: '/admin/pembayaran', match: '/admin/pembayaran', icon: 'wallet' },
     { label: 'Ulasan', to: '/admin/ulasan', match: '/admin/ulasan', icon: 'tag' },
+    { label: 'Chat', to: '/admin/chat', match: '/admin/chat', icon: 'users' },
+    { label: 'Analitik', to: '/admin/analitik', match: '/admin/analitik', icon: 'grid' },
+    { label: 'Pengaturan', to: '/admin/pengaturan', match: '/admin/pengaturan', icon: 'tag' },
 ]
 
 function isActive(match: string): boolean {

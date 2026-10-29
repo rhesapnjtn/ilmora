@@ -5,14 +5,31 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
+public function store(StoreUserRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'role' => $data['role'],
+        ]);
+
+        return response()->json([
+            'message' => 'Pengguna berhasil dibuat.',
+            'user' => $this->present($user->loadCount(['subscriptions', 'payments'])),
+        ], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $search = $request->string('search')->toString();
@@ -96,6 +113,20 @@ class UserController extends Controller
     private function adminCount(): int
     {
         return User::query()->where('role', 'admin')->count();
+    }
+
+    public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $users = User::query()->latest()->get();
+
+        return Response::streamDownload(function () use ($users): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Email', 'Role', 'Created At']);
+            foreach ($users as $user) {
+                fputcsv($handle, [$user->id, $user->name, $user->email, $user->role, $user->created_at]);
+            }
+            fclose($handle);
+        }, 'users.csv', ['Content-Type' => 'text/csv']);
     }
 
     /**

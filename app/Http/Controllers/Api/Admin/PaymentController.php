@@ -102,4 +102,19 @@ class PaymentController extends Controller
 
         return response()->json(['message' => 'Pembayaran ditolak dan pesanan dibatalkan.']);
     }
+
+    public function refund(Payment $payment): JsonResponse
+    {
+        if (! in_array($payment->status, ['success', 'paid'], true)) {
+            return response()->json(['message' => 'Hanya pembayaran berhasil yang dapat direfund.'], 422);
+        }
+
+        $payment->update(['status' => 'refunded']);
+
+        if ($payment->subscription) {
+            $payment->subscription->update(['status' => 'canceled']);
+        }
+
+        return response()->json(['message' => 'Pembayaran direfund dan langganan dibatalkan.']);
+    }
 }

@@ -107,40 +107,49 @@ onMounted(() => load(1))
 
         <p v-if="error" class="mt-4 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ error }}</p>
 
-        <div class="card-flush mt-6 overflow-x-auto">
-            <table class="w-full min-w-[720px] text-left">
-                <thead>
-                    <tr class="border-b border-outline-variant/60 text-label-md uppercase tracking-wide text-on-surface-variant">
-                        <th class="px-5 py-4 font-semibold">Pengguna</th>
-                        <th class="px-5 py-4 font-semibold">Paket</th>
-                        <th class="px-5 py-4 font-semibold">Nominal</th>
-                        <th class="px-5 py-4 font-semibold">Status</th>
-                        <th class="px-5 py-4 font-semibold">Mulai</th>
-                        <th class="px-5 py-4 font-semibold">Berakhir</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-outline-variant/50">
-                    <tr v-if="loading">
-                        <td colspan="6" class="px-5 py-10 text-center text-body-sm text-on-surface-variant">Memuat data...</td>
-                    </tr>
-                    <tr v-else-if="subscriptions.length === 0">
-                        <td colspan="6" class="px-5 py-10 text-center text-body-sm text-on-surface-variant">Belum ada langganan.</td>
-                    </tr>
-                    <tr v-for="subscription in subscriptions" :key="subscription.id" class="transition-colors hover:bg-surface-container-low/60">
-                        <td class="px-5 py-4">
-                            <p class="text-body-md font-semibold text-on-surface">{{ subscription.user.name ?? 'Pengguna' }}</p>
-                            <p class="text-body-sm text-on-surface-variant">{{ subscription.user.email }}</p>
-                        </td>
-                        <td class="px-5 py-4 text-body-sm text-on-surface-variant">{{ subscription.plan }}</td>
-                        <td class="px-5 py-4 text-body-sm font-semibold text-on-surface">{{ formatCurrency(subscription.amount, subscription.currency) }}</td>
-                        <td class="px-5 py-4">
-                            <Badge :variant="statusVariant[subscription.status] ?? 'outline'" size="sm">{{ statusLabel[subscription.status] ?? subscription.status }}</Badge>
-                        </td>
-                        <td class="px-5 py-4 text-body-sm text-on-surface-variant">{{ formatDate(subscription.startsAt) }}</td>
-                        <td class="px-5 py-4 text-body-sm text-on-surface-variant">{{ formatDate(subscription.expiresAt) }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="card-flush mt-6 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[760px] text-left">
+                    <thead>
+                        <tr class="bg-surface-container-low/60 text-label-sm uppercase tracking-wider text-on-surface-variant">
+                            <th class="px-6 py-4 font-semibold">Pengguna</th>
+                            <th class="px-6 py-4 font-semibold">Paket</th>
+                            <th class="px-6 py-4 font-semibold">Nominal</th>
+                            <th class="px-6 py-4 font-semibold">Status</th>
+                            <th class="px-6 py-4 font-semibold">Mulai</th>
+                            <th class="px-6 py-4 font-semibold">Berakhir</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/40">
+                        <tr v-if="loading">
+                            <td colspan="6" class="px-6 py-12 text-center text-body-sm text-on-surface-variant">Memuat data...</td>
+                        </tr>
+                        <tr v-else-if="subscriptions.length === 0">
+                            <td colspan="6" class="px-6 py-12 text-center text-body-sm text-on-surface-variant">Belum ada langganan.</td>
+                        </tr>
+                        <tr v-for="subscription in subscriptions" :key="subscription.id" class="group transition-all hover:bg-primary/5">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-label-md font-bold text-primary">
+                                        {{ (subscription.user.name ?? 'U').charAt(0).toUpperCase() }}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-body-md font-semibold text-on-surface">{{ subscription.user.name ?? 'Pengguna' }}</p>
+                                        <p class="truncate text-body-sm text-on-surface-variant">{{ subscription.user.email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-body-sm font-medium text-on-surface">{{ subscription.plan }}</td>
+                            <td class="px-6 py-4 text-body-sm font-semibold text-on-surface">{{ formatCurrency(subscription.amount, subscription.currency) }}</td>
+                            <td class="px-6 py-4">
+                                <Badge :variant="statusVariant[subscription.status] ?? 'outline'" size="sm">{{ statusLabel[subscription.status] ?? subscription.status }}</Badge>
+                            </td>
+                            <td class="px-6 py-4 text-body-sm text-on-surface-variant">{{ formatDate(subscription.startsAt) }}</td>
+                            <td class="px-6 py-4 text-body-sm text-on-surface-variant">{{ formatDate(subscription.expiresAt) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <Pagination :page="meta.page" :last-page="meta.lastPage" @change="load" />

@@ -53,6 +53,9 @@ const justCheckedIn = ref(false)
 const showBadgeGuide = ref(false)
 const confettiPieces = ref<number[]>([])
 const badges = ref<Array<{ code: string; name: string; description: string; icon: string; unlocked: boolean; unlockedAt: string | null }>>([])
+const redeemableCourses = ref<Array<{ slug: string; title: string; pointsCost: number }>>([])
+const redeemingSlug = ref<string | null>(null)
+const redeemError = ref<string | null>(null)
 const leaderboard = ref<Array<{ rank: number; id: number; name: string; avatar: string | null; points: number; streak: number }>>([])
 const userRank = ref<number | null>(null)
 
@@ -174,9 +177,43 @@ async function handleLogout(): Promise<void> {
     }
 }
 
+async function loadRedeemable(): Promise<void> {
+    try {
+        const { data: payload } = await api.get<{ courses: Array<{ slug: string; title: string; pointsCost: number }> }>('/courses')
+        const ownedSlugs = new Set((data.value?.activeCourses ?? []).map((course) => course.slug))
+        redeemableCourses.value = (payload.courses ?? [])
+            .filter((course) => (course.pointsCost ?? 0) > 0 && !ownedSlugs.has(course.slug))
+            .slice(0, 6)
+    } catch {
+        // non-critical
+    }
+}
+
+async function redeemCourse(slug: string): Promise<void> {
+    const course = redeemableCourses.value.find((item) => item.slug === slug)
+    if (!course) return
+    if (!window.confirm(`Tukar ${course.pointsCost} poin untuk akses kursus "${course.title}"?`)) {
+        return
+    }
+    redeemingSlug.value = slug
+    redeemError.value = null
+    try {
+        await api.post(`/courses/${encodeURIComponent(slug)}/redeem`)
+        await loadDashboard()
+        await loadPoints()
+        await loadRedeemable()
+    } catch (err) {
+        const response = (err as { response?: { data?: { message?: string } } }).response
+        redeemError.value = response?.data?.message ?? 'Gagal menukar poin.'
+    } finally {
+        redeemingSlug.value = null
+    }
+}
+
 onMounted(() => {
     loadDashboard()
     loadPoints()
+    loadRedeemable()
 })
 </script>
 
@@ -223,79 +260,209 @@ onMounted(() => {
                 </div>
 
                 <template v-else-if="data">
-                    <section class="mt-6">
-                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-rose-500/15 p-6 ring-1 ring-amber-500/20">
-                            <div v-if="confettiPieces.length" class="pointer-events-none absolute inset-0 overflow-hidden">
-                                <span
-                                    v-for="p in confettiPieces"
-                                    :key="p"
-                                    class="confetti-piece"
-                                    :style="{ left: (Math.random() * 100) + '%', animationDelay: (Math.random() * 0.4) + 's', background: ['#f59e0b','#fb923c','#f43f5e','#a855f7','#22c55e','#3b82f6'][p % 6] }"
-                                />
-                            </div>
-                            <div class="flex flex-wrap items-center justify-between gap-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-3xl shadow-lg shadow-orange-500/30">
-                                        <span class="animate-pulse">🔥</span>
-                                        <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface text-xs font-bold text-orange-600 ring-2 ring-orange-500">
-                                            {{ pointsStreak }}
-                                        </span>
-                                    </div>
+                    <!-- Ringkasan progres -->
+                    <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="card">
+                            <p class="text-label-sm text-on-surface-variant">Progres Belajar</p>
+                            <p class="mt-2 text-display-sm font-bold text-primary">{{ data.progress.percent }}%</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">{{ data.progress.completed }}/{{ data.progress.total }} kursus selesai</p>
+                        </div>
+                        <div class="card">
+                            <p class="text-label-sm text-on-surface-variant">Kursus Aktif</p>
+                            <p class="mt-2 text-display-sm font-bold">{{ data.activeCourses.length }}</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">sedang dipelajari</p>
+                        </div>
+                        <div class="card">
+                            <p class="text-label-sm text-on-surface-variant">Streak</p>
+                            <p class="mt-2 text-display-sm font-bold text-amber-500">{{ pointsStreak }} hari</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">{{ pointsBalance }} poin</p>
+                        </div>
+                        <div class="card">
+                            <p class="text-label-sm text-on-surface-variant">Status Langganan</p>
+                            <p class="mt-2 text-title-md font-bold">{{ data.subscription.plan ?? 'Belum Berlangganan' }}</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">{{ data.subscription.hasActive ? 'Aktif' : data.subscription.status }}</p>
+                        </div>
+                    </section>
+
+                    <!-- Kursus Aktif -->
+                    <section class="mt-8">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-title-lg font-semibold">Kursus Aktif</h2>
+                            <RouterLink to="/kursus" class="link text-body-sm">Lihat katalog</RouterLink>
+                        </div>
+
+                        <div v-if="data.activeCourses.length === 0" class="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-outline-variant py-14 text-center">
+                            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
+                                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                </svg>
+                            </span>
+                            <p class="mt-4 text-title-md font-semibold text-on-surface">Kamu belum mengikuti kursus apa pun</p>
+                            <p class="mt-1 text-body-sm text-on-surface-variant">Mulai belajar sekarang dari ratusan kursus terbaik di Ilmora.</p>
+                            <RouterLink to="/kursus" class="btn-primary mt-6 inline-flex items-center gap-2">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                                Jelajahi Katalog Kursus
+                            </RouterLink>
+                        </div>
+
+                        <div v-else class="mt-4 space-y-4">
+                            <div v-for="course in data.activeCourses" :key="course.slug" class="card">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <h2 class="text-title-lg font-bold">Streak Pembelajaran</h2>
-                                        <p class="mt-0.5 text-body-sm text-on-surface-variant">
-                                            {{ pointsStreak }} hari berturut-turut · {{ pointsBalance }} poin
-                                        </p>
-                                        <p v-if="checkinMessage" class="mt-1 text-body-sm font-medium text-tertiary">{{ checkinMessage }}</p>
+                                        <span class="badge-primary">{{ course.category }}</span>
+                                        <h3 class="mt-3 text-title-md font-semibold">{{ course.title }}</h3>
+                                        <p class="mt-1 text-body-sm text-on-surface-variant">{{ course.module }}</p>
+                                    </div>
+                                    <RouterLink :to="`/kursus/${course.slug}`" class="btn-primary h-10 px-4 text-label-md">Lanjutkan</RouterLink>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="flex items-center justify-between text-body-sm text-on-surface-variant">
+                                        <span>{{ course.completedCount }} / {{ course.totalLessons }} pelajaran selesai</span>
+                                        <span class="font-semibold text-on-surface">{{ course.progress }}%</span>
+                                    </div>
+                                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
+                                        <div class="h-full rounded-full bg-primary transition-all duration-500" :style="{ width: `${course.progress}%` }" />
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    class="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3 text-label-lg font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-orange-500/40 disabled:cursor-not-allowed disabled:opacity-60"
-                                    :disabled="checkingIn"
-                                    @click="handleCheckin"
-                                >
-                                    <span v-if="justCheckedIn" class="absolute inset-0 animate-ping bg-white/30" />
-                                    {{ checkingIn ? 'Memproses...' : 'Check-in Hari Ini' }}
-                                </button>
-                            </div>
-
-                            <div class="mt-5">
-                                <div class="flex items-center justify-between text-label-sm text-on-surface-variant">
-                                    <span>Progress ke {{ nextMilestone }} hari</span>
-                                    <span>{{ milestoneProgress }}%</span>
-                                </div>
-                                <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container-high">
-                                    <div
-                                        class="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-700"
-                                        :style="{ width: milestoneProgress + '%' }"
-                                    />
-                                </div>
-                                <div class="mt-3 flex flex-wrap items-center gap-2">
-                                    <span
-                                        v-for="m in [7, 30, 100]"
-                                        :key="m"
-                                        class="rounded-full px-3 py-1 text-label-sm font-semibold transition-all"
-                                        :class="pointsStreak >= m
-                                            ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/40'
-                                            : 'bg-surface-container-high text-on-surface-variant'"
-                                    >
-                                        {{ pointsStreak >= m ? 'OK' : 'o' }} {{ m }} hari
-                                        <span class="ml-1 opacity-70">
-                                            +{{ m === 7 ? 20 : m === 30 ? 100 : 500 }}
-                                        </span>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 flex flex-wrap items-center gap-3 text-body-sm text-on-surface-variant">
-                                <span>Besok kamu bisa dapat <span class="font-semibold text-amber-600">+{{ tomorrowReward }} poin</span> jika check-in.</span>
-                                <span class="rounded-full bg-surface/60 px-3 py-1 text-label-sm">Tier: {{ streakTier.label }}</span>
                             </div>
                         </div>
                     </section>
 
-                    <section class="mt-6 grid gap-6 lg:grid-cols-2">
+                    <!-- Tukar Poin -->
+                    <section v-if="redeemableCourses.length" class="mt-8">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-title-lg font-semibold">Tukar Poin untuk Kursus</h2>
+                            <span class="text-body-sm text-on-surface-variant">Saldo: {{ pointsBalance }} poin</span>
+                        </div>
+                        <p v-if="redeemError" class="mt-3 rounded-2xl bg-error/10 px-4 py-3 text-body-sm text-error" role="alert">{{ redeemError }}</p>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div v-for="course in redeemableCourses" :key="course.slug" class="card">
+                                <h3 class="text-title-md font-semibold">{{ course.title }}</h3>
+                                <p class="mt-2 text-body-sm text-on-surface-variant">Biaya: {{ course.pointsCost }} poin</p>
+                                <button
+                                    type="button"
+                                    class="btn-primary mt-4 h-10 px-4 text-label-md disabled:opacity-50"
+                                    :disabled="redeemingSlug === course.slug || pointsBalance < course.pointsCost"
+                                    @click="redeemCourse(course.slug)"
+                                >
+                                    {{ redeemingSlug === course.slug ? 'Memproses...' : (pointsBalance < course.pointsCost ? 'Poin tidak cukup' : 'Tukar') }}
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Streak & Check-in -->
+                    <section class="mt-8 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-violet-500/10 p-6 ring-1 ring-amber-500/20">
+                        <div v-if="confettiPieces.length" class="pointer-events-none absolute inset-0 overflow-hidden">
+                            <span
+                                v-for="p in confettiPieces"
+                                :key="p"
+                                class="confetti-piece"
+                                :style="{ left: (Math.random() * 100) + '%', animationDelay: (Math.random() * 0.4) + 's', background: ['#f59e0b','#fb923c','#a855f7','#8b5cf6','#22c55e','#3b82f6'][p % 6] }"
+                            />
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-3xl shadow-lg shadow-orange-500/30">
+                                    <span class="animate-pulse">🔥</span>
+                                    <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface text-xs font-bold text-orange-600 ring-2 ring-orange-500">
+                                        {{ pointsStreak }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h2 class="text-title-lg font-bold">Streak Pembelajaran</h2>
+                                    <p class="mt-0.5 text-body-sm text-on-surface-variant">
+                                        {{ pointsStreak }} hari berturut-turut · {{ pointsBalance }} poin
+                                    </p>
+                                    <p v-if="checkinMessage" class="mt-1 text-body-sm font-medium text-tertiary">{{ checkinMessage }}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                class="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3 text-label-lg font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-orange-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="checkingIn"
+                                @click="handleCheckin"
+                            >
+                                <span v-if="justCheckedIn" class="absolute inset-0 animate-ping bg-white/30" />
+                                {{ checkingIn ? 'Memproses...' : 'Check-in Hari Ini' }}
+                            </button>
+                        </div>
+
+                        <div class="mt-5">
+                            <div class="flex items-center justify-between text-label-sm text-on-surface-variant">
+                                <span>Progress ke {{ nextMilestone }} hari</span>
+                                <span>{{ milestoneProgress }}%</span>
+                            </div>
+                            <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container-high">
+                                <div
+                                    class="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-violet-500 transition-all duration-700"
+                                    :style="{ width: milestoneProgress + '%' }"
+                                />
+                            </div>
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <span
+                                    v-for="m in [7, 30, 100]"
+                                    :key="m"
+                                    class="rounded-full px-3 py-1 text-label-sm font-semibold transition-all"
+                                    :class="pointsStreak >= m
+                                        ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/40'
+                                        : 'bg-surface-container-high text-on-surface-variant'"
+                                >
+                                    {{ pointsStreak >= m ? 'OK' : 'o' }} {{ m }} hari
+                                    <span class="ml-1 opacity-70">
+                                        +{{ m === 7 ? 20 : m === 30 ? 100 : 500 }}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap items-center gap-3 text-body-sm text-on-surface-variant">
+                            <span>Besok kamu bisa dapat <span class="font-semibold text-amber-600">+{{ tomorrowReward }} poin</span> jika check-in.</span>
+                            <span class="rounded-full bg-surface/60 px-3 py-1 text-label-sm">Tier: {{ streakTier.label }}</span>
+                        </div>
+                    </section>
+
+                    <!-- Progres & Rekor -->
+                    <section class="mt-8 grid gap-6 lg:grid-cols-3">
+                        <div class="card flex items-center gap-6 lg:col-span-2">
+                            <div class="relative h-32 w-32 shrink-0">
+                                <svg class="h-32 w-32 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" class="text-surface-container-high" stroke-width="10" />
+                                    <circle
+                                        cx="60" cy="60" r="52" fill="none" stroke="currentColor" class="text-primary" stroke-width="10"
+                                        stroke-linecap="round" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset"
+                                    />
+                                </svg>
+                                <span class="absolute inset-0 flex items-center justify-center text-display-sm font-bold">{{ data.progress.percent }}%</span>
+                            </div>
+                            <div>
+                                <h2 class="text-title-lg font-semibold">Progres Belajar</h2>
+                                <p class="mt-1 text-body-md text-on-surface-variant">
+                                    {{ data.progress.completed }} dari {{ data.progress.total }} kursus telah diselesaikan dengan baik.
+                                </p>
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <span :class="data.subscription.plan ? 'badge-primary' : 'badge-outline'">
+                                        {{ data.subscription.plan ? `Member ${data.subscription.plan}` : 'Belum Berlangganan' }}
+                                    </span>
+                                    <span :class="data.subscription.hasActive ? 'badge-success' : data.subscription.code === 'pending' ? 'badge-promo' : 'badge-outline'">
+                                        {{ data.subscription.status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card flex flex-col justify-between bg-gradient-to-br from-primary to-primary-container text-white">
+                            <div>
+                                <p class="text-label-md font-medium text-white/70">Rekor belajar</p>
+                                <p class="mt-2 text-display-sm font-bold">{{ data.streakDays }} Hari</p>
+                                <p class="mt-1 text-body-sm text-white/80">Streak belajarmu saat ini.</p>
+                            </div>
+                            <p class="mt-4 text-body-sm text-white/80">Konsistensi hari ini, hasil luar biasa esok!</p>
+                        </div>
+                    </section>
+
+                    <!-- Badge & Leaderboard -->
+                    <section class="mt-8 grid gap-6 lg:grid-cols-2">
                         <div class="card">
                             <h2 class="text-title-md font-semibold">Badge Kamu</h2>
                             <p class="mt-1 text-body-sm text-on-surface-variant">Kumpulkan badge dengan belajar konsisten.</p>
@@ -347,89 +514,8 @@ onMounted(() => {
                         </div>
                     </section>
 
-                    <section class="mt-8 grid gap-6 lg:grid-cols-3">
-                        <div class="card flex items-center gap-6 lg:col-span-2">
-                            <div class="relative h-32 w-32 shrink-0">
-                                <svg class="h-32 w-32 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-                                    <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" class="text-surface-container-high" stroke-width="10" />
-                                    <circle
-                                        cx="60" cy="60" r="52" fill="none" stroke="currentColor" class="text-primary" stroke-width="10"
-                                        stroke-linecap="round" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset"
-                                    />
-                                </svg>
-                                <span class="absolute inset-0 flex items-center justify-center text-display-sm font-bold">{{ data.progress.percent }}%</span>
-                            </div>
-                            <div>
-                                <h2 class="text-title-lg font-semibold">Progres Belajar</h2>
-                                <p class="mt-1 text-body-md text-on-surface-variant">
-                                    {{ data.progress.completed }} dari {{ data.progress.total }} kursus telah diselesaikan dengan baik.
-                                </p>
-                                <div class="mt-3 flex flex-wrap items-center gap-2">
-                                    <span :class="data.subscription.plan ? 'badge-primary' : 'badge-outline'">
-                                        {{ data.subscription.plan ? `Member ${data.subscription.plan}` : 'Belum Berlangganan' }}
-                                    </span>
-                                    <span :class="data.subscription.hasActive ? 'badge-success' : data.subscription.code === 'pending' ? 'badge-promo' : 'badge-outline'">
-                                        {{ data.subscription.status }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card flex flex-col justify-between bg-gradient-to-br from-primary to-primary-container text-white">
-                            <div>
-                                <p class="text-label-md font-medium text-white/70">Rekor belajar</p>
-                                <p class="mt-2 text-display-sm font-bold">{{ data.streakDays }} Hari</p>
-                                <p class="mt-1 text-body-sm text-white/80">Streak belajarmu saat ini.</p>
-                            </div>
-                            <p class="mt-4 text-body-sm text-white/80">Konsistensi hari ini, hasil luar biasa esok!</p>
-                        </div>
-                    </section>
-
-                    <section class="mt-10">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-title-lg font-semibold">Kursus Aktif</h2>
-                            <RouterLink to="/kursus" class="link text-body-sm">Lihat katalog</RouterLink>
-                        </div>
-
-                        <!-- Empty state for new users -->
-                        <div v-if="data.activeCourses.length === 0" class="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-outline-variant py-14 text-center">
-                            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
-                                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                                </svg>
-                            </span>
-                            <p class="mt-4 text-title-md font-semibold text-on-surface">Kamu belum mengikuti kursus apa pun</p>
-                            <p class="mt-1 text-body-sm text-on-surface-variant">Mulai belajar sekarang dari ratusan kursus terbaik di Ilmora.</p>
-                            <RouterLink to="/kursus" class="btn-primary mt-6 inline-flex items-center gap-2">
-                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                                Jelajahi Katalog Kursus
-                            </RouterLink>
-                        </div>
-
-                        <div v-else class="mt-4 space-y-4">
-                            <div v-for="course in data.activeCourses" :key="course.slug" class="card">
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <span class="badge-primary">{{ course.category }}</span>
-                                        <h3 class="mt-3 text-title-md font-semibold">{{ course.title }}</h3>
-                                        <p class="mt-1 text-body-sm text-on-surface-variant">{{ course.module }}</p>
-                                    </div>
-                                    <RouterLink :to="`/kursus/${course.slug}`" class="btn-primary h-10 px-4 text-label-md">Lanjutkan</RouterLink>
-                                </div>
-                                <div class="mt-4">
-                                    <div class="flex items-center justify-between text-body-sm text-on-surface-variant">
-                                        <span>{{ course.completedCount }} / {{ course.totalLessons }} pelajaran selesai</span>
-                                        <span class="font-semibold text-on-surface">{{ course.progress }}%</span>
-                                    </div>
-                                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-                                        <div class="h-full rounded-full bg-primary transition-all duration-500" :style="{ width: `${course.progress}%` }" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="card mt-6">
+                    <!-- Langganan -->
+                    <section class="card mt-8">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <template v-if="data.subscription.hasActive">
@@ -458,10 +544,13 @@ onMounted(() => {
                     </section>
                 </template>
 
-    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-on-surface-variant">
-      <span>&copy; 2026 Ilmora. Hak cipta dilindungi.</span>
-      <span class="flex gap-6"><a href="#" class="hover:text-primary">Kebijakan Privasi</a><a href="#" class="hover:text-primary">Syarat Layanan</a></span>
-    </div>
+                <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-on-surface-variant">
+                    <span>&copy; {{ new Date().getFullYear() }} Ilmora. Hak cipta dilindungi.</span>
+                    <span class="flex gap-6">
+                        <RouterLink to="/kebijakan-privasi" class="hover:text-primary">Kebijakan Privasi</RouterLink>
+                        <RouterLink to="/syarat-layanan" class="hover:text-primary">Syarat Layanan</RouterLink>
+                    </span>
+                </div>
             </div>
         </div>
 

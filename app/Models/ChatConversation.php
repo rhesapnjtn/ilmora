@@ -58,6 +58,11 @@ class ChatConversation extends Model
         return $this->user_typing_at !== null && $this->user_typing_at->diffInSeconds(now()) < 5;
     }
 
+    public function isOpen(): bool
+    {
+        return $this->status === 'open';
+    }
+
     public function isCSTyping(): bool
     {
         return $this->cs_typing_at !== null && $this->cs_typing_at->diffInSeconds(now()) < 5;

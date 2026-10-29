@@ -102,6 +102,23 @@ class PointsSystemTest extends TestCase
             ->assertOk();
     }
 
+    public function test_redeem_twice_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $course = Course::factory()->create([
+            'published' => true,
+            'points_cost' => 1,
+        ]);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->actingAs($user)->postJson('/api/checkin')->assertOk();
+            $user->forceFill(['last_checkin_at' => now()->subDay()->toDateString(), 'current_streak' => 0])->save();
+        }
+
+        $this->actingAs($user)->postJson("/api/courses/{$course->slug}/redeem")->assertCreated();
+        $this->actingAs($user)->postJson("/api/courses/{$course->slug}/redeem")->assertStatus(422);
+    }
+
     public function test_redeem_fails_without_enough_points(): void
     {
         $user = User::factory()->create();

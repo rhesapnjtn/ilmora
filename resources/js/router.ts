@@ -201,6 +201,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Moderasi Ulasan', requiresAuth: true, requiresAdmin: true },
     },
     {
+        path: '/admin/analitik',
+        name: 'admin-analytics',
+        component: () => import('@/Pages/Admin/Analytics/Index.vue'),
+        meta: { title: 'Analitik', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/pengaturan',
+        name: 'admin-settings',
+        component: () => import('@/Pages/Admin/Settings/Index.vue'),
+        meta: { title: 'Pengaturan Sistem', requiresAuth: true, requiresAdmin: true },
+    },
+    {
         path: '/kebijakan-privasi',
         name: 'privacy',
         component: () => import('@/Pages/Privacy.vue'),

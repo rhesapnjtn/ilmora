@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
@@ -140,6 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     Route::get('/dashboard', AdminDashboardController::class);
 
     Route::get('/chat/conversations', [AdminChatController::class, 'index']);
@@ -170,6 +173,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('/courses/{course}/lessons/{lesson}/video', [AdminLessonController::class, 'destroyVideo']);
 
     Route::get('/users', [AdminUserController::class, 'index']);
+    Route::post('/users', [AdminUserController::class, 'store']);
+    Route::get('/users/export', [AdminUserController::class, 'export']);
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
     Route::put('/users/{user}', [AdminUserController::class, 'update']);
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
@@ -187,10 +192,14 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/chat/conversations/{conversation}/close', [AdminChatController::class, 'close']);
 
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
+    Route::post('/subscriptions/{subscription}/cancel', [AdminSubscriptionController::class, 'cancel']);
     Route::get('/payments', [AdminPaymentController::class, 'index']);
 
     Route::get('/reviews', [AdminReviewController::class, 'index']);
     Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy']);
     Route::post('/payments/{payment}/approve', [AdminPaymentController::class, 'approve']);
     Route::post('/payments/{payment}/reject', [AdminPaymentController::class, 'reject']);
+    Route::post('/payments/{payment}/refund', [AdminPaymentController::class, 'refund']);
+    Route::get('/settings', [AdminSettingController::class, 'index']);
+    Route::put('/settings', [AdminSettingController::class, 'update']);
 });

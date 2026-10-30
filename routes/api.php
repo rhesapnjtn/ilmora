@@ -1,16 +1,22 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Api\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PlanController as AdminPlanController;
+use App\Http\Controllers\Api\Admin\ProgressController;
+use App\Http\Controllers\Api\Admin\ReviewController;
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Api\Admin\SearchController;
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
+use App\Http\Controllers\Api\Admin\TicketController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
@@ -142,6 +148,23 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/audit-logs', [AdminAuditLogController::class, 'index']);
+
+    Route::get('/reviews', [ReviewController::class, 'index']);
+    Route::patch('/reviews/{review}/status', [ReviewController::class, 'updateStatus']);
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+
+    Route::get('/media', [MediaController::class, 'index']);
+    Route::post('/media', [MediaController::class, 'store']);
+    Route::delete('/media/{media}', [MediaController::class, 'destroy']);
+
+    Route::get('/progress', [ProgressController::class, 'index']);
+    Route::get('/tickets', [TicketController::class, 'index']);
+    Route::patch('/tickets/{conversation}', [TicketController::class, 'update']);
+
+    Route::get('/search', [SearchController::class, 'index']);
+
+    Route::post('/courses/bulk-status', [AdminCourseController::class, 'bulkStatus']);
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     Route::get('/dashboard', AdminDashboardController::class);
 

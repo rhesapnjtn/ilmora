@@ -39,6 +39,7 @@ class Course extends Model
         'points_cost',
         'intro_video_url',
         'published',
+        'status',
         'progress',
         'learn',
         'includes',

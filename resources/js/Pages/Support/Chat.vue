@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Button from '@/Components/Button.vue'
 import api from '@/lib/api'
@@ -34,6 +35,9 @@ interface Topic {
     code: string
     label: string
 }
+
+const route = useRoute()
+const routeConversationId = computed(() => Number(route.params.id) || null)
 
 const topics = ref<Topic[]>([])
 const conversations = ref<Conversation[]>([])
@@ -201,6 +205,20 @@ async function closeConversation(): Promise<void> {
 onMounted(async () => {
     await loadTopics()
     await loadConversations()
+    if (routeConversationId.value) {
+        const found = conversations.value.find((c) => c.id === routeConversationId.value)
+        if (found) {
+            await openConversation(found)
+        } else {
+            try {
+                const { data } = await api.get<{ conversation: Conversation }>(`/chat/conversations/${routeConversationId.value}`)
+                conversations.value.unshift(data.conversation)
+                await openConversation(data.conversation)
+            } catch (err) {
+                error.value = normalizeApiError(err).message ?? 'Gagal memuat percakapan.'
+            }
+        }
+    }
 })
 
 onUnmounted(stopPolling)

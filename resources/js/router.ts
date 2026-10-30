@@ -113,6 +113,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Bantuan & Chat CS', requiresAuth: true },
     },
     {
+        path: '/bantuan/chat/:id',
+        name: 'support-chat-detail',
+        component: () => import('@/Pages/Support/Chat.vue'),
+        meta: { title: 'Bantuan & Chat CS', requiresAuth: true },
+    },
+    {
         path: '/profile',
         name: 'profile',
         component: () => import('@/Pages/Profile/Edit.vue'),
@@ -211,6 +217,30 @@ const routes: RouteRecordRaw[] = [
         name: 'admin-settings',
         component: () => import('@/Pages/Admin/Settings/Index.vue'),
         meta: { title: 'Pengaturan Sistem', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/aktivitas',
+        name: 'admin-audit-logs',
+        component: () => import('@/Pages/Admin/AuditLogs/Index.vue'),
+        meta: { title: 'Aktivitas Admin', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/ulasan',
+        name: 'admin-reviews',
+        component: () => import('@/Pages/Admin/Reviews/Index.vue'),
+        meta: { title: 'Moderasi Ulasan', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/tiket',
+        name: 'admin-tickets',
+        component: () => import('@/Pages/Admin/Tickets/Index.vue'),
+        meta: { title: 'Tiket Support', requiresAuth: true, requiresAdmin: true },
+    },
+    {
+        path: '/admin/media',
+        name: 'admin-media',
+        component: () => import('@/Pages/Admin/Media/Index.vue'),
+        meta: { title: 'Media Library', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/kebijakan-privasi',

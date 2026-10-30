@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChatConversation;
 use App\Models\Course;
+use App\Models\CourseReview;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
@@ -42,6 +44,11 @@ class DashboardController extends Controller
                 'active' => Subscription::query()->where('status', 'active')->count(),
                 'expired' => Subscription::query()->where('status', 'expired')->count(),
                 'canceled' => Subscription::query()->where('status', 'canceled')->count(),
+            ],
+            'alerts' => [
+                ['label' => 'Pembayaran menunggu verifikasi', 'count' => Payment::query()->where('status', 'pending')->count(), 'route' => '/admin/pembayaran', 'tone' => 'warning'],
+                ['label' => 'Percakapan chat terbuka', 'count' => ChatConversation::query()->where('status', 'open')->count(), 'route' => '/admin/chat', 'tone' => 'primary'],
+                ['label' => 'Ulasan perlu moderasi', 'count' => CourseReview::query()->count(), 'route' => '/admin/ulasan', 'tone' => 'secondary'],
             ],
         ]);
     }

@@ -16,7 +16,7 @@ class CourseReviewController extends Controller
     {
         $course = Course::query()->where('slug', $slug)->firstOrFail();
 
-        $reviews = $course->reviews()->with('user:id,name,avatar')->latest()->get();
+        $reviews = $course->reviews()->where('status', 'approved')->with('user:id,name,avatar')->latest()->get();
 
         $average = $reviews->isEmpty() ? (float) $course->rating : round($reviews->avg('rating'), 2);
 
@@ -45,6 +45,7 @@ class CourseReviewController extends Controller
             [
                 'rating' => $validated['rating'],
                 'body' => $validated['body'] ?? null,
+                'status' => 'pending',
             ],
         );
 

@@ -6,11 +6,14 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\AdminAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
+    public function __construct(private readonly AdminAuditLogger $auditLogger) {}
+
     public function index(): JsonResponse
     {
         $settings = Setting::query()->orderBy('group')->orderBy('key')->get()
@@ -42,6 +45,8 @@ class SettingController extends Controller
                 $item['group'] ?? 'general',
             );
         }
+
+        $this->auditLogger->log($request, 'settings.updated', null, ['keys' => collect($data['settings'])->pluck('key')->all()]);
 
         return response()->json(['message' => 'Pengaturan berhasil disimpan.']);
     }

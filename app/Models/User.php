@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'permissions',
         'current_streak',
         'longest_streak',
         'last_checkin_at',
@@ -56,12 +57,27 @@ class User extends Authenticatable
             'current_streak' => 'integer',
             'longest_streak' => 'integer',
             'last_checkin_at' => 'date',
+            'permissions' => 'array',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role, $roles, true);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        return in_array($permission, $this->permissions ?? [], true);
     }
 
     public function hasActiveSubscription(): bool

@@ -57,6 +57,22 @@ class AdminTest extends TestCase
             ]);
     }
 
+    public function test_admin_can_view_analytics(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->withToken($admin->createToken('test')->plainTextToken)
+            ->getJson('/api/admin/analytics?months=6')
+            ->assertOk()
+            ->assertJsonStructure([
+                'overview' => ['totalUsers', 'totalRevenue', 'successRate'],
+                'trend',
+                'topCourses',
+                'subscriptionsByStatus',
+                'paymentsByStatus',
+            ]);
+    }
+
     public function test_admin_can_list_courses(): void
     {
         $admin = User::factory()->admin()->create();

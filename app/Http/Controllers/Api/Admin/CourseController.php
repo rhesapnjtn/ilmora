@@ -99,6 +99,23 @@ class CourseController extends Controller
         ]);
     }
 
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:courses,id'],
+            'status' => ['required', 'in:draft,published,archived'],
+        ]);
+
+        $published = $data['status'] === 'published';
+        Course::query()->whereIn('id', $data['ids'])->update([
+            'status' => $data['status'],
+            'published' => $published,
+        ]);
+
+        return response()->json(['message' => 'Status kursus diperbarui.']);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

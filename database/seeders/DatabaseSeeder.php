@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             CourseSeeder::class,
             PlanSeeder::class,
             DemoActivitySeeder::class,
+            SettingsSeeder::class,
         ]);
     }
 }

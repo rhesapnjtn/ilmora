@@ -6,13 +6,14 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Services\AdminAuditLogger;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    public function __construct(private readonly SubscriptionService $subscriptions) {}
+    public function __construct(private readonly SubscriptionService $subscriptions, private readonly AdminAuditLogger $auditLogger) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -88,6 +89,7 @@ class PaymentController extends Controller
         }
 
         $this->subscriptions->approve($payment);
+        $this->auditLogger->log(request(), 'payment.approved', $payment);
 
         return response()->json(['message' => 'Pembayaran terverifikasi dan langganan telah diaktifkan.']);
     }
@@ -99,6 +101,7 @@ class PaymentController extends Controller
         }
 
         $this->subscriptions->reject($payment);
+        $this->auditLogger->log(request(), 'payment.rejected', $payment);
 
         return response()->json(['message' => 'Pembayaran ditolak dan pesanan dibatalkan.']);
     }
@@ -110,6 +113,7 @@ class PaymentController extends Controller
         }
 
         $payment->update(['status' => 'refunded']);
+        $this->auditLogger->log(request(), 'payment.refunded', $payment);
 
         if ($payment->subscription) {
             $payment->subscription->update(['status' => 'canceled']);

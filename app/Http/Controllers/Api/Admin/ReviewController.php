@@ -13,24 +13,26 @@ class ReviewController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $status = $request->string('status')->toString();
         $reviews = CourseReview::query()
-            ->with(['user:id,name,email', 'course:id,title,slug'])
+            ->with(['user:id,name,email', 'course:id,title'])
+            ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(20);
 
-        return response()->json([
-            'reviews' => $reviews->items(),
-            'meta' => [
-                'page' => $reviews->currentPage(),
-                'total' => $reviews->total(),
-                'lastPage' => $reviews->lastPage(),
-            ],
-        ]);
+        return response()->json(['reviews' => $reviews]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function updateStatus(Request $request, CourseReview $review): JsonResponse
     {
-        $review = CourseReview::query()->findOrFail($id);
+        $data = $request->validate(['status' => ['required', 'in:pending,approved,rejected']]);
+        $review->update(['status' => $data['status']]);
+
+        return response()->json(['review' => $review->fresh(['user', 'course'])]);
+    }
+
+    public function destroy(CourseReview $review): JsonResponse
+    {
         $review->delete();
 
         return response()->json(['message' => 'Ulasan dihapus.']);

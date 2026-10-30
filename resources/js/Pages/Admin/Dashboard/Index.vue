@@ -31,6 +31,7 @@ interface Dashboard {
     recentUsers: RecentUser[]
     recentPayments: RecentPayment[]
     subscriptionBreakdown: { active: number; expired: number; canceled: number }
+    alerts: { label: string; count: number; route: string; tone: string }[]
 }
 
 const data = ref<Dashboard | null>(null)
@@ -113,6 +114,21 @@ onMounted(load)
                         </li>
                         <li v-if="data.recentPayments.length === 0" class="py-6 text-center text-body-sm text-on-surface-variant">Belum ada pembayaran.</li>
                     </ul>
+                </div>
+            </section>
+
+            <section class="mt-8">
+                <div class="card-flush">
+                    <div class="flex items-center justify-between border-b border-outline-variant/50 px-6 py-5">
+                        <div><p class="text-label-sm font-bold uppercase tracking-wider text-primary">Perlu perhatian</p><h2 class="mt-1 text-title-lg font-bold">Alert operasional</h2></div>
+                        <span class="badge-primary">Live</span>
+                    </div>
+                    <div class="grid divide-y divide-outline-variant/50 md:grid-cols-3 md:divide-x md:divide-y-0">
+                        <RouterLink v-for="alert in data.alerts" :key="alert.label" :to="alert.route" class="group flex items-center justify-between gap-4 p-6 transition-colors hover:bg-primary/5">
+                            <div><p class="text-body-sm font-semibold text-on-surface">{{ alert.label }}</p><p class="mt-1 text-body-sm text-on-surface-variant">Tinjau dan tindak lanjuti</p></div>
+                            <span class="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">{{ alert.count }}</span>
+                        </RouterLink>
+                    </div>
                 </div>
             </section>
 
